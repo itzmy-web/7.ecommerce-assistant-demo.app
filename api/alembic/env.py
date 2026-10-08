@@ -20,7 +20,8 @@ target_metadata = Base.metadata
 # 这里在 drop 前自动摘掉相关外键，专治这一类反向报错。仅在 MySQL 生效；
 # 守卫自身任何异常都吞掉，绝不阻断原迁移操作（原 op 始终会执行）。
 import alembic.operations.ops as _ops
-from sqlalchemy import Engine as _Engine, text as _text
+from sqlalchemy import Engine as _Engine
+from sqlalchemy import text as _text
 
 
 def _drop_fk_for_index(self, index_name, table_name):
