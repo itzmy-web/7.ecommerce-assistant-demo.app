@@ -1,0 +1,214 @@
+# 第23章 Docker Compose 容器化交付（教材 23.2 完整编排）
+#
+# 共享边界（23.1）：api 与 worker 必须用相同的 DATABASE_URL、REDIS_URL、
+# 模型配置和 api-uploads 卷 —— Worker 下载到共享卷的素材，API 才能通过
+# /uploads 提供给浏览器；只共享数据库而不共享 uploads 会「任务成功但文件打不开」。
+#
+# 本机落地时相对教材原文的适配（语义不变，仅为可运行/可离线）：
+#   1) 发布端口统一绑定 127.0.0.1（不对外暴露，且避开宿主机端口占用）。
+#   2) 为 api / web 增加 healthcheck，使 worker / web 的
+#      depends_on: service_healthy 生效（教材原文 web 用列表式 depends_on）。
+#   3) api / worker / web 同时声明 image: 与 build:：镜像已存在时 up 直接复用，
+#      不需要联网重新构建；需要重建时用 docker compose build。
+#
+# 变量来源：项目根目录 .env（部署者私有，绝不提交）。见 .env.example。
+
+name: ecommerce-operation-assistant
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}"
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ecommerce_operation}
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    environment:
+      REDIS_PASSWORD: "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}"
+    command: ["sh", "-c", "exec redis-server --requirepass \"$${REDIS_PASSWORD}\""]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  agent-checkpoints:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${AGENT_POSTGRES_USER:-agent}
+      POSTGRES_PASSWORD: "${AGENT_POSTGRES_PASSWORD:?Set AGENT_POSTGRES_PASSWORD in .env}"
+      POSTGRES_DB: ${AGENT_POSTGRES_DATABASE:-agent_checkpoints}
+    ports:
+      - "127.0.0.1:${AGENT_POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - agent-checkpoint-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AGENT_POSTGRES_USER:-agent} -d ${AGENT_POSTGRES_DATABASE:-agent_checkpoints}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: ecommerce-operation-assistant-api:latest
+    build:
+      context: ./api
+    environment:
+      DATABASE_URL: mysql+pymysql://root:${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}@mysql:3306/${MYSQL_DATABASE:-ecommerce_operation}
+      APP_ENV: ${APP_ENV:-development}
+      API_CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}@redis:6379/0
+      TASK_QUEUE_BACKEND: celery
+      CELERY_TASK_DEFAULT_QUEUE: generation
+      CELERY_AGENT_QUEUE: agent
+      CELERY_AGENT_WORKFLOW_QUEUE: agent.workflow
+      CELERY_MAINTENANCE_QUEUE: maintenance
+      AGENT_CHECKPOINT_HOST: agent-checkpoints
+      AGENT_CHECKPOINT_PORT: 5432
+      AGENT_CHECKPOINT_USER: ${AGENT_POSTGRES_USER:-agent}
+      AGENT_CHECKPOINT_PASSWORD: "${AGENT_POSTGRES_PASSWORD:?Set AGENT_POSTGRES_PASSWORD in .env}"
+      AGENT_CHECKPOINT_DATABASE: ${AGENT_POSTGRES_DATABASE:-agent_checkpoints}
+      AGENT_MAX_TOTAL_TOKENS: ${AGENT_MAX_TOTAL_TOKENS:-12000}
+      AGENT_MAX_REVISIONS: ${AGENT_MAX_REVISIONS:-1}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-ecommerce-operation-agent-api}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:-dev-auth-secret-change-me}
+      AUTH_TOKEN_EXPIRE_MINUTES: ${AUTH_TOKEN_EXPIRE_MINUTES:-10080}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      IMAGE_PROVIDER: ${IMAGE_PROVIDER:-}
+      IMAGE_BASE_URL: ${IMAGE_BASE_URL:-}
+      IMAGE_API_KEY: ${IMAGE_API_KEY:-}
+      IMAGE_MODEL: ${IMAGE_MODEL:-}
+      IMAGE_SIZE: ${IMAGE_SIZE:-1024*1024}
+      IMAGE_WORKSPACE_ID: ${IMAGE_WORKSPACE_ID:-}
+      IMAGE_POLL_INTERVAL_SECONDS: ${IMAGE_POLL_INTERVAL_SECONDS:-5}
+      IMAGE_POLL_MAX_ATTEMPTS: ${IMAGE_POLL_MAX_ATTEMPTS:-24}
+      VIDEO_PROVIDER: ${VIDEO_PROVIDER:-}
+      VIDEO_BASE_URL: ${VIDEO_BASE_URL:-}
+      VIDEO_API_KEY: ${VIDEO_API_KEY:-}
+      VIDEO_MODEL: ${VIDEO_MODEL:-}
+      VIDEO_SIZE: ${VIDEO_SIZE:-1280*720}
+      VIDEO_DURATION: ${VIDEO_DURATION:-2}
+      VIDEO_WORKSPACE_ID: ${VIDEO_WORKSPACE_ID:-}
+      VIDEO_POLL_INTERVAL_SECONDS: ${VIDEO_POLL_INTERVAL_SECONDS:-10}
+      VIDEO_POLL_MAX_ATTEMPTS: ${VIDEO_POLL_MAX_ATTEMPTS:-36}
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    volumes:
+      - api-uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      agent-checkpoints:
+        condition: service_healthy
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  worker:
+    image: ecommerce-operation-assistant-worker:latest
+    build:
+      context: ./api
+    environment:
+      DATABASE_URL: mysql+pymysql://root:${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}@mysql:3306/${MYSQL_DATABASE:-ecommerce_operation}
+      APP_ENV: ${APP_ENV:-development}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}@redis:6379/0
+      TASK_QUEUE_BACKEND: celery
+      CELERY_TASK_DEFAULT_QUEUE: generation
+      CELERY_AGENT_QUEUE: agent
+      CELERY_AGENT_WORKFLOW_QUEUE: agent.workflow
+      CELERY_MAINTENANCE_QUEUE: maintenance
+      AGENT_CHECKPOINT_HOST: agent-checkpoints
+      AGENT_CHECKPOINT_PORT: 5432
+      AGENT_CHECKPOINT_USER: ${AGENT_POSTGRES_USER:-agent}
+      AGENT_CHECKPOINT_PASSWORD: "${AGENT_POSTGRES_PASSWORD:?Set AGENT_POSTGRES_PASSWORD in .env}"
+      AGENT_CHECKPOINT_DATABASE: ${AGENT_POSTGRES_DATABASE:-agent_checkpoints}
+      AGENT_MAX_TOTAL_TOKENS: ${AGENT_MAX_TOTAL_TOKENS:-12000}
+      AGENT_MAX_REVISIONS: ${AGENT_MAX_REVISIONS:-1}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-ecommerce-operation-agent-worker}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:-dev-auth-secret-change-me}
+      AUTH_TOKEN_EXPIRE_MINUTES: ${AUTH_TOKEN_EXPIRE_MINUTES:-10080}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      IMAGE_PROVIDER: ${IMAGE_PROVIDER:-}
+      IMAGE_BASE_URL: ${IMAGE_BASE_URL:-}
+      IMAGE_API_KEY: ${IMAGE_API_KEY:-}
+      IMAGE_MODEL: ${IMAGE_MODEL:-}
+      IMAGE_SIZE: ${IMAGE_SIZE:-1024*1024}
+      IMAGE_WORKSPACE_ID: ${IMAGE_WORKSPACE_ID:-}
+      IMAGE_POLL_INTERVAL_SECONDS: ${IMAGE_POLL_INTERVAL_SECONDS:-5}
+      IMAGE_POLL_MAX_ATTEMPTS: ${IMAGE_POLL_MAX_ATTEMPTS:-24}
+      VIDEO_PROVIDER: ${VIDEO_PROVIDER:-}
+      VIDEO_BASE_URL: ${VIDEO_BASE_URL:-}
+      VIDEO_API_KEY: ${VIDEO_API_KEY:-}
+      VIDEO_MODEL: ${VIDEO_MODEL:-}
+      VIDEO_SIZE: ${VIDEO_SIZE:-1280*720}
+      VIDEO_DURATION: ${VIDEO_DURATION:-2}
+      VIDEO_WORKSPACE_ID: ${VIDEO_WORKSPACE_ID:-}
+      VIDEO_POLL_INTERVAL_SECONDS: ${VIDEO_POLL_INTERVAL_SECONDS:-10}
+      VIDEO_POLL_MAX_ATTEMPTS: ${VIDEO_POLL_MAX_ATTEMPTS:-36}
+    volumes:
+      - api-uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      agent-checkpoints:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    command: celery -A app.worker.celery_app.celery_app worker --loglevel=INFO -Q generation,agent,agent.workflow,maintenance -B
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.worker.celery_app.celery_app inspect ping -t 5 2>/dev/null | grep -q pong"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
+  web:
+    image: ecommerce-operation-assistant-web:latest
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:${API_PORT:-8000}
+    environment:
+      API_INTERNAL_BASE_URL: http://api:8000
+      NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:${API_PORT:-8000}
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(response => { if (!response.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
+  agent-checkpoint-data:
+  api-uploads:

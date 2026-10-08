@@ -1,0 +1,39 @@
+[project]
+name = "ecommerce-operation-assistant-api"
+version = "0.1.0"
+description = "FastAPI backend for Ecommerce Operation Assistant."
+requires-python = ">=3.12"
+dependencies = [
+  "alembic",
+  "celery[redis]",
+  "cryptography",
+  "fastapi",
+  "httpx",
+  "langgraph",
+  "langgraph-checkpoint-postgres",
+  "opentelemetry-api",
+  "opentelemetry-exporter-otlp-proto-http",
+  "opentelemetry-sdk",
+  "psycopg[binary,pool]",
+  "pydantic-settings",
+  "pymysql",
+  "python-multipart",
+  "sqlalchemy",
+  "uvicorn[standard]",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "ruff",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# app/ 在 api/ 这一层，tests/ 下的测试要 `from app.main import app` 必须把 api/ 加进 sys.path。
+# 不加的话 pytest 只会把 tests/ 塞进去，直接 ModuleNotFoundError: No module named 'app'。
+pythonpath = ["."]
