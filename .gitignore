@@ -11,3 +11,5 @@ uploads/
 .workbuddy/
 *.tar
 *.tar.gz
+# 本地备份目录（含密钥，绝不入库）
+backups/
