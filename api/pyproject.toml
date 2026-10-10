@@ -32,6 +32,12 @@ dev = [
 line-length = 100
 target-version = "py312"
 
+[tool.ruff.lint]
+# 显式钉死规则集为 ruff 传统默认（E4/E7/E9/F）。
+# ruff 0.16 起内置默认集变宽（新增 BLE/S/DTZ/RUF 等），会在旧代码上刷出 26 个历史风格问题；
+# 这里显式 select 让 lint 行为跨版本稳定，旧代码清理另行安排。
+select = ["E4", "E7", "E9", "F"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # app/ 在 api/ 这一层，tests/ 下的测试要 `from app.main import app` 必须把 api/ 加进 sys.path。
