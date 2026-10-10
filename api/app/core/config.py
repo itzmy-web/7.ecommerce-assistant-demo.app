@@ -62,6 +62,26 @@ class Settings(BaseSettings):
     video_workspace_id: str | None = Field(default=None, alias="VIDEO_WORKSPACE_ID")
     video_poll_interval_seconds: int = Field(default=10, alias="VIDEO_POLL_INTERVAL_SECONDS")
     video_poll_max_attempts: int = Field(default=36, alias="VIDEO_POLL_MAX_ATTEMPTS")
+    # 数字人（魔珐星云）：凭证只放在后端 .env / 容器环境变量，前端通过受鉴权保护的
+    # /api/v1/digital-human/credentials 动态获取，绝不硬编码进前端源码。
+    digital_human_app_id: str | None = Field(default=None, alias="DIGITAL_HUMAN_APP_ID")
+    digital_human_app_secret: str | None = Field(
+        default=None, alias="DIGITAL_HUMAN_APP_SECRET"
+    )
+    digital_human_gateway_server: str = Field(
+        default="https://nebula-agent.xingyun3d.com/user/v1/ttsa/session",
+        alias="DIGITAL_HUMAN_GATEWAY_SERVER",
+    )
+
+    @property
+    def digital_human_configured(self) -> bool:
+        """AppId / AppSecret 均已配置时才对前端下发凭证。"""
+        return bool(
+            self.digital_human_app_id
+            and self.digital_human_app_id.strip()
+            and self.digital_human_app_secret
+            and self.digital_human_app_secret.strip()
+        )
 
     model_config = SettingsConfigDict(
         env_file=API_DIR / ".env", env_file_encoding="utf-8", extra="ignore"

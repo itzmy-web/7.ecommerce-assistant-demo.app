@@ -1276,3 +1276,50 @@ class PerformanceImportResult(BaseModel):
     created_count: int
     error_count: int
     rows: list[PerformanceImportRowResult]
+
+
+# ---------------------------------------------------------------------------
+# 数据看板（只读聚合，登录即可查看）
+# ---------------------------------------------------------------------------
+
+
+class DashboardOverview(BaseModel):
+    """看板概览卡片：六个关键运营指标 + 近 30 天经营汇总。"""
+
+    product_count: int
+    active_sku_count: int
+    inventory_alert_count: int
+    active_creative_plan_count: int
+    pending_approval_count: int
+    revenue_last_30d: Decimal
+    # ROI 聚合口径：近 30 天有 ROI 记录的算术平均（缺少 spend 权重，先给出参考值）。
+    avg_roi_last_30d: Decimal | None
+
+
+class DashboardPerformancePoint(BaseModel):
+    period_start: date
+    revenue: Decimal
+    clicks: int
+    conversions: int
+
+
+class DashboardPerformanceTrend(BaseModel):
+    days: int
+    points: list[DashboardPerformancePoint]
+
+
+class DashboardInventoryAlert(BaseModel):
+    product_id: int
+    product_name: str
+    sku_id: int
+    sku_code: str
+    sku_name: str | None
+    quantity: int
+    locked_quantity: int
+    available_quantity: int
+    warning_threshold: int
+
+
+class DashboardInventoryAlerts(BaseModel):
+    total: int
+    rows: list[DashboardInventoryAlert]

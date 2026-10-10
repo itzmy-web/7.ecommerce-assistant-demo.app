@@ -6,6 +6,8 @@ from app.api.routes import (
     agent_platform,
     agent_runs,
     auth,
+    dashboard,
+    digital_human,
     health,
     model_settings,
     products,
@@ -38,6 +40,10 @@ app.include_router(model_settings.router, prefix="/api/v1")
 # 第 19–21 章 Agent 路由（Agent 运行/审批/恢复记录，以及平台注册表与工具目录）
 app.include_router(agent_runs.router, prefix="/api/v1")
 app.include_router(agent_platform.router, prefix="/api/v1")
+# 数据看板路由（概览卡片 / 经营趋势 / 库存告警，只读聚合）
+app.include_router(dashboard.router, prefix="/api/v1")
+# 数字人路由（魔珐星云 SDK 凭证下发，需登录）
+app.include_router(digital_human.router, prefix="/api/v1")
 
 # 生成媒体静态挂载：图片/视频服务会把素材落到 api/uploads，并返回 "/uploads/..." 形式的 URL。
 # 该目录必须挂载到根路径，浏览器/前端才能实际取到文件；否则 /uploads/... 会 404，

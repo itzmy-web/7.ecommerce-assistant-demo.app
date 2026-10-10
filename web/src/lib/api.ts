@@ -6,6 +6,10 @@ import type {
   AgentMemory,
   AgentTask,
   AuthToken,
+  DashboardInventoryAlerts,
+  DashboardOverview,
+  DashboardPerformanceTrend,
+  DigitalHumanCredentials,
   ModelSettings,
   Product,
   ProductDetail,
@@ -321,5 +325,78 @@ async function fetchAgentResource<T>(
   } catch (error) {
     if (error instanceof AgentApiError) throw error;
     throw new AgentApiError("Agent API is unavailable", null);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 数据看板（只读聚合，登录即可查看）
+// ---------------------------------------------------------------------------
+
+/** 请求后端获取看板概览指标；失败时返回 null，由页面自行降级展示。 */
+export async function getDashboardOverview(): Promise<DashboardOverview | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/dashboard/overview`, {
+      headers: await authHeaders(),
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return null;
+    }
+    return response.json();
+  } catch {
+    return null;
+  }
+}
+
+/** 请求后端获取近 N 天经营趋势时间序列；失败时返回空序列。 */
+export async function getDashboardPerformanceTrend(
+  days: number,
+): Promise<DashboardPerformanceTrend> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/dashboard/performance-trend?days=${days}`,
+      {
+        headers: await authHeaders(),
+        cache: "no-store",
+      },
+    );
+    if (!response.ok) {
+      return { days, points: [] };
+    }
+    return response.json();
+  } catch {
+    return { days, points: [] };
+  }
+}
+
+/** 请求后端获取库存告警明细；失败时返回空列表。 */
+export async function getDashboardInventoryAlerts(): Promise<DashboardInventoryAlerts> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/dashboard/inventory-alerts`, {
+      headers: await authHeaders(),
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return { total: 0, rows: [] };
+    }
+    return response.json();
+  } catch {
+    return { total: 0, rows: [] };
+  }
+}
+
+/** 请求后端获取数字人（魔珐星云）SDK 凭证；未配置或未登录时返回 null。 */
+export async function getDigitalHumanCredentials(): Promise<DigitalHumanCredentials | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/digital-human/credentials`, {
+      headers: await authHeaders(),
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return null;
+    }
+    return response.json();
+  } catch {
+    return null;
   }
 }

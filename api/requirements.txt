@@ -1,0 +1,13 @@
+alembic
+celery[redis]
+cryptography
+fastapi
+httpx
+pydantic
+pydantic-settings
+pymysql
+python-multipart
+redis
+sqlalchemy
+uvicorn
+websockets

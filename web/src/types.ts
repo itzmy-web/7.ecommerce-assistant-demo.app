@@ -736,3 +736,52 @@ export type AgentMemory = {
   created_at: string;
   updated_at: string;
 };
+
+// ---------------------------------------------------------------------------
+// 数据看板
+// ---------------------------------------------------------------------------
+
+export type DashboardOverview = {
+  product_count: number;
+  active_sku_count: number;
+  inventory_alert_count: number;
+  active_creative_plan_count: number;
+  pending_approval_count: number;
+  revenue_last_30d: string;
+  avg_roi_last_30d: string | null;
+};
+
+export type DashboardPerformancePoint = {
+  period_start: string;
+  revenue: string;
+  clicks: number;
+  conversions: number;
+};
+
+export type DashboardPerformanceTrend = {
+  days: number;
+  points: DashboardPerformancePoint[];
+};
+
+export type DashboardInventoryAlert = {
+  product_id: number;
+  product_name: string;
+  sku_id: number;
+  sku_code: string;
+  sku_name: string | null;
+  quantity: number;
+  locked_quantity: number;
+  available_quantity: number;
+  warning_threshold: number;
+};
+
+export type DashboardInventoryAlerts = {
+  total: number;
+  rows: DashboardInventoryAlert[];
+};
+
+export type DigitalHumanCredentials = {
+  app_id: string;
+  app_secret: string;
+  gateway_server: string;
+};
