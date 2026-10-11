@@ -460,6 +460,21 @@ export async function GET(request: Request, { params }: Params) {
         warning_threshold: s.inventory_item.warning_threshold,
       })),
     }),
+    "automation/overview": () => ({
+      generated_at: new Date().toISOString(),
+      system_heartbeats: [
+        { name: "Outbox 事件分发", task: "maintenance.dispatch_outbox", every_seconds: 5, description: "把已提交的 Agent 任务派发到执行队列" },
+        { name: "Agent 运行时维护", task: "maintenance.agent_runtime", every_seconds: 30, description: "回收超时租约、重投中断任务、过期审批自动处理" },
+      ],
+      competitor_monitors: [
+        { id: 1, product_id: 1, product_name: "云感轻氧羽绒被", status: "active", interval_days: 7, last_checked_at: iso(2), next_check_at: iso(-5), overdue: true },
+        { id: 2, product_id: 3, product_name: "山野冷萃咖啡液 30 条", status: "active", interval_days: 14, last_checked_at: iso(3), next_check_at: iso(-11), overdue: false },
+      ],
+      active_agent_tasks: AGENT_TASKS.filter((t) => ["queued", "running", "awaiting_approval"].includes(t.status)),
+      generation_jobs_active: 1,
+      agent_runs_queued: 1,
+      agent_runs_running: 1,
+    }),
     "digital-human/credentials": () => json({ detail: "数字人凭证未配置" }, 503),
   };
   if (exact[route]) return json(exact[route]());

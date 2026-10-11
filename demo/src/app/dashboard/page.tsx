@@ -60,12 +60,20 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
             商品、库存、创意与 Agent 审批的关键指标汇总（只读）。
           </p>
         </div>
-        <Link
-          href="/"
-          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:border-sky-300 hover:text-sky-700"
-        >
-          返回工作台
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/dashboard/print?days=${days}`}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:border-sky-300 hover:text-sky-700"
+          >
+            导出报告
+          </Link>
+          <Link
+            href="/"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:border-sky-300 hover:text-sky-700"
+          >
+            返回工作台
+          </Link>
+        </div>
       </header>
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">

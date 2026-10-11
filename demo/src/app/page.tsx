@@ -13,6 +13,7 @@ import {
   Package,
   Settings,
   Store as StoreIcon,
+  Timer,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
@@ -47,6 +48,7 @@ const workflow = [
   { title: "建店建档", icon: Building2, tone: "bg-sky-100 text-sky-700", href: "/" },
   { title: "导入数据", icon: ClipboardList, tone: "bg-cyan-100 text-cyan-700", href: "/imports" },
   { title: "数据看板", icon: BarChart3, tone: "bg-indigo-100 text-indigo-700", href: "/dashboard" },
+  { title: "自动化任务", icon: Timer, tone: "bg-cyan-100 text-cyan-700", href: "/automation" },
   { title: "AI 数字人", icon: UserRound, tone: "bg-violet-100 text-violet-700", href: "/digital-human" },
   { title: "补商品信息", icon: ImageIcon, tone: "bg-emerald-100 text-emerald-700", href: "/?workflow=product" },
   { title: "投放建议", icon: Megaphone, tone: "bg-amber-100 text-amber-700", href: "/?workflow=ads" },

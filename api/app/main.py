@@ -6,6 +6,7 @@ from app.api.routes import (
     agent_platform,
     agent_runs,
     auth,
+    automation,
     dashboard,
     digital_human,
     health,
@@ -44,6 +45,7 @@ app.include_router(agent_platform.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 # 数字人路由（魔珐星云 SDK 凭证下发，需登录）
 app.include_router(digital_human.router, prefix="/api/v1")
+app.include_router(automation.router, prefix="/api/v1")
 
 # 生成媒体静态挂载：图片/视频服务会把素材落到 api/uploads，并返回 "/uploads/..." 形式的 URL。
 # 该目录必须挂载到根路径，浏览器/前端才能实际取到文件；否则 /uploads/... 会 404，

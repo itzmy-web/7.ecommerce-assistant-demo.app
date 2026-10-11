@@ -965,6 +965,15 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class SmsSendRequest(BaseModel):
+    phone: str = Field(min_length=11, max_length=11, pattern=r"^1\d{10}$")
+
+
+class SmsLoginRequest(BaseModel):
+    phone: str = Field(min_length=11, max_length=11, pattern=r"^1\d{10}$")
+    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+
+
 class AuthTokenRead(BaseModel):
     access_token: str
     token_type: str = "bearer"

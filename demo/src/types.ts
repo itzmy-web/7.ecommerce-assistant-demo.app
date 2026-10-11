@@ -785,3 +785,41 @@ export type DigitalHumanCredentials = {
   app_secret: string;
   gateway_server: string;
 };
+
+// ── 自动化任务中心 ──
+export type SystemHeartbeat = {
+  name: string;
+  task: string;
+  every_seconds: number;
+  description: string;
+};
+
+export type CompetitorMonitorRow = {
+  id: number;
+  product_id: number;
+  product_name: string;
+  status: string;
+  interval_days: number;
+  last_checked_at: string | null;
+  next_check_at: string | null;
+  overdue: boolean;
+};
+
+export type ActiveAgentTaskRow = {
+  id: number;
+  title: string;
+  workflow_key: string;
+  status: string;
+  risk_level: string;
+  created_at: string | null;
+};
+
+export type AutomationOverview = {
+  generated_at: string;
+  system_heartbeats: SystemHeartbeat[];
+  competitor_monitors: CompetitorMonitorRow[];
+  active_agent_tasks: ActiveAgentTaskRow[];
+  generation_jobs_active: number;
+  agent_runs_queued: number;
+  agent_runs_running: number;
+};

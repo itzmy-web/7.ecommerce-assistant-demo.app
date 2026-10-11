@@ -4,9 +4,10 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.db.session import get_db
 from app.models import User, UserRole, Workspace
-from app.schemas import AuthTokenRead, LoginRequest, UserRead
+from app.schemas import AuthTokenRead, LoginRequest, SmsLoginRequest, SmsSendRequest, UserRead
 from app.services.auth import (
     AuthTokenError,
     create_access_token,
@@ -28,6 +29,66 @@ def login(payload: LoginRequest, db: SessionDep) -> dict:
     user = db.scalars(select(User).where(User.email == payload.email.strip().lower())).first()
     if user is None or not user.password_hash or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    try:
+        ensure_user_can_login(user)
+    except AuthTokenError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    return {
+        "access_token": create_access_token(user),
+        "token_type": "bearer",
+        "user": user_to_read(user),
+    }
+
+
+@router.post("/sms/send")
+def sms_send(payload: SmsSendRequest) -> dict:
+    """下发短信验证码；console 通道（开发/演示）同时返回 debug_code 便于联调。"""
+    from app.services.sms import SmsError, send_sms_code
+
+    try:
+        code, expires_in = send_sms_code(payload.phone)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+    except SmsError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    response: dict = {"ok": True, "expires_in": expires_in}
+    if get_settings().sms_provider == "console":
+        # 仅演示/开发通道回带验证码，方便云端演示与联调；生产通道绝不回带。
+        response["debug_code"] = code
+    return response
+
+
+@router.post("/sms/login", response_model=AuthTokenRead)
+def sms_login(payload: SmsLoginRequest, db: SessionDep) -> dict:
+    """手机号 + 验证码登录：验证通过后按 `{phone}@sms.local` 找到或创建用户。"""
+    from app.services.sms import phone_to_login_email, verify_sms_code
+
+    if not verify_sms_code(payload.phone, payload.code):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="验证码错误或已过期")
+
+    email = phone_to_login_email(payload.phone)
+    user = db.scalars(select(User).where(User.email == email)).first()
+    if user is None:
+        # 首次短信登录即注册：无密码哈希 → 该账号只能走短信通道，邮箱密码登录对其天然关闭。
+        user = User(
+            email=email,
+            display_name=f"手机用户 {payload.phone[-4:]}",
+            role=UserRole.OPERATOR,
+        )
+        db.add(user)
+        db.flush()
+        # 挂到第一个工作台（演示/单租户部署只有一个），让新用户立即可用。
+        first_workspace = db.scalars(select(Workspace).order_by(Workspace.id)).first()
+        if first_workspace is not None:
+            from app.models import WorkspaceMembership
+
+            db.add(
+                WorkspaceMembership(
+                    workspace_id=first_workspace.id, user_id=user.id, role=UserRole.OPERATOR
+                )
+            )
+        db.commit()
+        db.refresh(user)
     try:
         ensure_user_can_login(user)
     except AuthTokenError as exc:

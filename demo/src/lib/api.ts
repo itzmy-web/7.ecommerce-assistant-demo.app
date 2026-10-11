@@ -5,6 +5,7 @@ import type {
   AgentCatalog,
   AgentMemory,
   AgentTask,
+  AutomationOverview,
   AuthToken,
   DashboardInventoryAlerts,
   DashboardOverview,
@@ -390,6 +391,22 @@ export async function getDashboardInventoryAlerts(): Promise<DashboardInventoryA
 export async function getDigitalHumanCredentials(): Promise<DigitalHumanCredentials | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/v1/digital-human/credentials`, {
+      headers: await authHeaders(),
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return null;
+    }
+    return response.json();
+  } catch {
+    return null;
+  }
+}
+
+/** 请求后端获取自动化任务中心聚合视图；失败时返回 null（页面降级为引导文案）。 */
+export async function getAutomationOverview(): Promise<AutomationOverview | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/automation/overview`, {
       headers: await authHeaders(),
       cache: "no-store",
     });

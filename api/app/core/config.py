@@ -73,6 +73,10 @@ class Settings(BaseSettings):
         alias="DIGITAL_HUMAN_GATEWAY_SERVER",
     )
 
+    # 短信验证码通道：console=开发/演示（验证码进日志、接口返回 debug_code）；
+    # aliyun=生产占位（需配置 SMS_ALIYUN_* 后实现）。
+    sms_provider: str = Field(default="console", alias="SMS_PROVIDER")
+
     @property
     def digital_human_configured(self) -> bool:
         """AppId / AppSecret 均已配置时才对前端下发凭证。"""
