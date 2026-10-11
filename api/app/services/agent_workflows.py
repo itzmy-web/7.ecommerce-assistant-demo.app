@@ -635,12 +635,22 @@ def _evaluate_quality(context: dict[str, Any], outputs: dict[str, Any]) -> dict[
     if not context.get("product") and not context.get("store"):
         issues.append({"code": "context.missing", "severity": "error", "message": "缺少业务上下文"})
     error_count = sum(issue["severity"] == "error" for issue in issues)
-    return {
+    rule_result = {
         "passed": error_count == 0,
         "score": max(0, 100 - error_count * 25),
         "issues": issues,
         "checked_rules": ["non_empty", "prohibited_claims", "business_context", "human_boundary"],
     }
+    # 规则全过时再交 LLM 复核（双门禁）；评审通道任何故障都静默回退纯规则，
+    # 绝不能让 judge 的可用性问题阻塞业务工作流。规则已拦截时无需浪费 token。
+    if rule_result["passed"]:
+        try:
+            from app.agents.quality_judge import llm_quality_judge, merge_rule_and_judge
+
+            rule_result = merge_rule_and_judge(rule_result, llm_quality_judge(context, outputs))
+        except Exception:  # noqa: BLE001, S110  # judge 故障必须回退规则结果，不阻塞工作流
+            pass
+    return rule_result
 
 
 def _finalize_generic_run(
