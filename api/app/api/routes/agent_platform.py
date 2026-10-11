@@ -216,8 +216,7 @@ def create_task(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     try:
         kick_outbox_dispatcher()
-    except Exception:
-        # Outbox 已与 Task 同事务提交，瞬时队列故障由 maintenance worker 后续重投。
+    except Exception:  # noqa: BLE001, S110  # Outbox 已与 Task 同事务提交，瞬时队列故障由 maintenance worker 后续重投
         pass
     db.refresh(task)
     return task
@@ -353,7 +352,7 @@ def decide_approval(
     if event is not None:
         try:
             kick_outbox_dispatcher()
-        except Exception:
+        except Exception:  # noqa: BLE001, S110  # Outbox 已与审批同事务提交，瞬时故障由 maintenance 重投
             pass
     db.refresh(approval)
     return approval

@@ -17,6 +17,7 @@ name: ecommerce-operation-assistant
 
 services:
   mysql:
+    restart: unless-stopped
     image: mysql:8.4
     environment:
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}"
@@ -32,6 +33,7 @@ services:
       retries: 10
 
   redis:
+    restart: unless-stopped
     image: redis:7-alpine
     environment:
       REDIS_PASSWORD: "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}"
@@ -45,6 +47,7 @@ services:
       retries: 10
 
   agent-checkpoints:
+    restart: unless-stopped
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: ${AGENT_POSTGRES_USER:-agent}
@@ -61,6 +64,7 @@ services:
       retries: 10
 
   api:
+    restart: unless-stopped
     image: ecommerce-operation-assistant-api:latest
     build:
       context: ./api
@@ -128,6 +132,7 @@ services:
       start_period: 10s
 
   worker:
+    restart: unless-stopped
     image: ecommerce-operation-assistant-worker:latest
     build:
       context: ./api
@@ -191,6 +196,7 @@ services:
       start_period: 30s
 
   web:
+    restart: unless-stopped
     image: ecommerce-operation-assistant-web:latest
     build:
       context: ./web

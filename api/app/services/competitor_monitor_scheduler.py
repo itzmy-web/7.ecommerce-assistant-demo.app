@@ -51,7 +51,7 @@ def run_due_competitor_monitors(
                 result.failed_count += 1
                 if snapshot.error:
                     result.errors.append(f"monitor#{monitor.id}: {snapshot.error}")
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001  # 错误已收集进 result.errors，不算盲吞
             result.failed_count += 1
             result.errors.append(f"monitor#{monitor.id}: {exc}")
 

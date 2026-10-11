@@ -65,7 +65,7 @@ def run_public_link_parse_task(db: Session, task: PublicLinkParseTask) -> Public
         task.finished_at = datetime.now(UTC)
     except LinkExtractionError as exc:
         _mark_failed(task, str(exc))
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001  # 统一走 _mark_failed 落库
         _mark_failed(task, f"公开链接解析失败：{exc}")
 
     db.commit()

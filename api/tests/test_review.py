@@ -30,7 +30,7 @@ def test_rule_based_review_mentions_linked_ad_experiment() -> None:
         revenue=Decimal("957.60"),
         roi=Decimal("3.6831"),
     )
-    record.created_at = datetime(2026, 6, 4, 12, 0, 0)
+    record.created_at = datetime(2026, 6, 4, 12, 0, 0)  # noqa: DTZ001  # 数据库列为 naive datetime，保持本地语义
     record.ad_experiment = experiment
     product.performance_records = [record]
 

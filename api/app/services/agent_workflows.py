@@ -945,7 +945,7 @@ def _decimal(value: Any) -> Decimal | None:
     """小数；只交换结构化 Agent 状态或受控工具结果，支持 checkpoint、审计与恢复。"""
     try:
         return Decimal(str(value)) if value is not None else None
-    except Exception:
+    except Exception:  # noqa: BLE001  # 宽松解析：非数值一律按 None 处理
         return None
 
 

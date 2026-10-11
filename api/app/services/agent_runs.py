@@ -189,8 +189,7 @@ def dispatch_agent_run(run_id: int, resume_payload: dict[str, Any] | None = None
 
             try:
                 kick_outbox_dispatcher()
-            except Exception:
-                # Outbox 已持久化，瞬时 Redis 故障不能把可恢复运行误标记为失败。
+            except Exception:  # noqa: BLE001, S110  # Outbox 已持久化，瞬时 Redis 故障不能把可恢复运行误标记为失败
                 pass
             return
     from app.worker.tasks import run_agent_workflow_task

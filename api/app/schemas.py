@@ -1160,9 +1160,12 @@ class AgentMemoryCreate(BaseModel):
     def validate_effective_window(self) -> "AgentMemoryCreate":
         """校验生效window，把配置或输入约束收敛为下游可直接使用的稳定数据。"""
         # 先处理输入与边界条件，再执行核心逻辑，最后返回稳定且可验证的结果。
-        if self.expires_at is not None and self.effective_at is not None:
-            if self.expires_at <= self.effective_at:
-                raise ValueError("expires_at must be later than effective_at")
+        if (
+            self.expires_at is not None
+            and self.effective_at is not None
+            and self.expires_at <= self.effective_at
+        ):
+            raise ValueError("expires_at must be later than effective_at")
         return self
 
 

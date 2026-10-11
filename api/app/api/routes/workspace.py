@@ -438,7 +438,7 @@ def create_demo_workspace(
     )
     db.add(ad_recommendation)
 
-    today = date.today()
+    today = date.today()  # noqa: DTZ011  # 业务口径=本地日期（与运营看板一致）
     performance_payload = enrich_performance_metrics(
         {
             "creative_plan_id": main_image_plan.id,

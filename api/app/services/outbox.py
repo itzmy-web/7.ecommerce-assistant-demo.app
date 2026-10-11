@@ -28,7 +28,7 @@ def dispatch_pending_outbox_events(*, limit: int = 50) -> int:
         for event in events:
             try:
                 _publish_event(event)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001  # 错误落库 event.error，按重试策略处理
                 event.attempts += 1
                 event.error = str(exc)[:2000]
                 if event.attempts >= 10:

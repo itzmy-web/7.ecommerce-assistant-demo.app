@@ -198,7 +198,7 @@ def run_generation_job(job_id: int, worker_id: str = "fastapi-background") -> No
                 payload={"result_url": asset.get("url"), "attempts": job.attempts},
                 worker_id=worker_id,
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001  # 统一走失败/重试处理
             _mark_failed_or_retry(job, exc)
         finally:
             job.locked_at = None

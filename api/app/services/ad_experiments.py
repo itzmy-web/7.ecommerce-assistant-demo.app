@@ -16,7 +16,7 @@ def build_ad_experiment_payload(product: Product) -> dict[str, Any]:
 
     asset_name = best_asset["item"].title if best_asset is not None else None
     link_name = best_link["item"].label if best_link is not None else None
-    name = f"{date.today():%m%d} 小预算素材承接实验"
+    name = f"{date.today():%m%d} 小预算素材承接实验"  # noqa: DTZ011  # 业务口径=本地日期
 
     objective = "验证推荐素材和承接链接在小预算投放下的点击、转化与 ROI 稳定性"
     if best_asset is not None and (best_asset["roi"] or Decimal(0)) >= Decimal(3):
@@ -110,12 +110,11 @@ def _best_by_records(
             }
         )
 
-    return sorted(
+    return max(
         rows,
         key=lambda row: (
             row["roi"] if row["roi"] is not None else Decimal(-1),
             row["ctr"] if row["ctr"] is not None else Decimal(-1),
             row["record_count"],
         ),
-        reverse=True,
-    )[0]
+    )

@@ -193,7 +193,7 @@ class QualityReviewAgent:
             )
 
         for index, plan in enumerate(creative_plans):
-            claim_text = " ".join([plan.headline, plan.sub_headline, plan.visual_focus])
+            claim_text = f"{plan.headline} {plan.sub_headline} {plan.visual_focus}"
             for banned_claim in self.BANNED_CLAIMS:
                 if banned_claim.lower() in claim_text.lower():
                     issues.append(

@@ -56,7 +56,7 @@ def _drop_fk_for_index(self, index_name, table_name):
         finally:
             if isinstance(bind, _Engine):
                 conn.close()
-    except Exception:
+    except Exception:  # noqa: BLE001, S110  # 守卫故意吞异常，绝不阻断原迁移（见上方注释）
         pass
 
 
@@ -76,7 +76,7 @@ def _drop_fk_referencing(self, table_name):
         finally:
             if isinstance(bind, _Engine):
                 conn.close()
-    except Exception:
+    except Exception:  # noqa: BLE001, S110  # 守卫故意吞异常，绝不阻断原迁移（见上方注释）
         pass
 
 

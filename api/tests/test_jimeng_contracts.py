@@ -5,6 +5,7 @@
 """
 import json
 from types import SimpleNamespace
+from typing import Self
 
 import pytest
 
@@ -158,7 +159,7 @@ class _FakeClient:
     def __init__(self, payload: dict) -> None:
         self._payload = payload
 
-    def __enter__(self) -> "_FakeClient":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc: object) -> bool:

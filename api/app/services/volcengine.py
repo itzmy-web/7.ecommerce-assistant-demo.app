@@ -54,15 +54,13 @@ def signed_json_headers(
         f"x-content-sha256:{payload_hash}\n"
         f"x-date:{x_date}\n"
     )
-    canonical_request = "\n".join(
-        [
-            method.upper(),
-            canonical_uri,
-            canonical_query,
-            canonical_headers,
-            signed_headers,
-            payload_hash,
-        ]
+    canonical_request = (
+        f"{method.upper()}\n"
+        f"{canonical_uri}\n"
+        f"{canonical_query}\n"
+        f"{canonical_headers}\n"
+        f"{signed_headers}\n"
+        f"{payload_hash}"
     )
     credential_scope = f"{short_date}/{region}/{service}/request"
     string_to_sign = "\n".join(

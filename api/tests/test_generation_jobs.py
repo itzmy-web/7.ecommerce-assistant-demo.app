@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from typing import ClassVar
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -191,7 +192,7 @@ def test_dispatch_generation_job_uses_celery_when_configured(monkeypatch) -> Non
         task_queue_backend = "celery"
 
     class FakeCeleryTask:
-        calls: list[int] = []
+        calls: ClassVar[list[int]] = []
 
         @classmethod
         def delay(cls, job_id: int) -> None:

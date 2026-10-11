@@ -83,8 +83,7 @@ def agent_lease_heartbeat(run_id: int, lease_owner: str) -> Generator[None, None
                     db.commit()
                     if result.rowcount != 1:
                         return
-            except Exception:
-                # 心跳失败不伪造成功；现有 lease 到期后由 maintenance 回收并用 fencing 阻止旧写入。
+            except Exception:  # noqa: BLE001, S112  # 心跳失败不伪造成功；lease 到期后由 maintenance 回收并用 fencing 阻止旧写入
                 continue
 
     thread = Thread(target=heartbeat, name=f"agent-lease-{run_id}", daemon=True)
