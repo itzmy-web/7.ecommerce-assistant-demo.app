@@ -501,6 +501,15 @@ export type UserAccount = {
   updated_at: string;
 };
 
+export type StoreGrant = {
+  id: number;
+  user_id: number;
+  user_email: string;
+  user_display_name: string;
+  role: string;
+  created_at: string | null;
+};
+
 export type AuthToken = {
   access_token: string;
   token_type: "bearer";

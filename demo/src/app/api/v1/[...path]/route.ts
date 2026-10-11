@@ -339,6 +339,10 @@ const USERS = [
   { ...DEMO_USER, id: 2, email: "operator@demo.com", display_name: "演示运营 B", role: "editor" },
 ];
 
+const GRANTS: Array<{ id: number; user_id: number; user_email: string; user_display_name: string; role: string; created_at: string }> = [
+  { id: 1, user_id: 2, user_email: "operator@demo.com", user_display_name: "演示运营 B", role: "viewer", created_at: iso(0) },
+];
+
 // ───────────────────────── 工具函数 ─────────────────────────
 
 function productDetail(id: number) {
@@ -546,6 +550,8 @@ export async function GET(request: Request, { params }: Params) {
     switch (sub) {
       case "inventory-summary":
         return json(inventorySummary(sid));
+      case "grants":
+        return json(GRANTS);
       case "inventory-movements":
         return json(MOVEMENTS);
       case "inventory-advice":
@@ -666,4 +672,61 @@ export async function POST(request: Request, { params }: Params) {
   }
 
   return json({ detail: `演示版未实现该操作：${route}` }, 404);
+}
+
+// ───────────────────────── PUT（店铺授权 upsert） ─────────────────────────
+
+export async function PUT(request: Request, { params }: Params) {
+  const { path } = await params;
+  const route = path.join("/");
+
+  const grantMatch = route.match(/^stores\/(\d+)\/grants$/);
+  if (grantMatch) {
+    const payload = (await request.json()) as { user_email?: string; role?: string };
+    const email = (payload.user_email ?? "").trim().toLowerCase();
+    const user = USERS.find((u) => u.email === email);
+    if (!user) {
+      return json({ detail: "用户不存在，请先在「设置-成员管理」中创建账号（演示可填 operator@demo.com）" }, 404);
+    }
+    if (payload.role !== "viewer" && payload.role !== "editor") {
+      return json({ detail: "角色只能是：viewer / editor" }, 422);
+    }
+    const existing = GRANTS.find((g) => g.user_id === user.id);
+    if (existing) {
+      existing.role = payload.role;
+      return json(existing);
+    }
+    const grant = {
+      id: nextId(GRANTS),
+      user_id: user.id,
+      user_email: user.email,
+      user_display_name: user.display_name,
+      role: payload.role,
+      created_at: iso(0),
+    };
+    GRANTS.push(grant);
+    return json(grant);
+  }
+
+  return json({ detail: `演示版未实现该接口：${route}` }, 404);
+}
+
+// ───────────────────────── DELETE（店铺授权撤销） ─────────────────────────
+
+export async function DELETE(_request: Request, { params }: Params) {
+  const { path } = await params;
+  const route = path.join("/");
+
+  const revokeMatch = route.match(/^stores\/(\d+)\/grants\/(\d+)$/);
+  if (revokeMatch) {
+    const userId = Number(revokeMatch[2]);
+    const index = GRANTS.findIndex((g) => g.user_id === userId);
+    if (index >= 0) {
+      GRANTS.splice(index, 1);
+      return new Response(null, { status: 204 });
+    }
+    return json({ detail: "授权不存在" }, 404);
+  }
+
+  return json({ detail: `演示版未实现该接口：${route}` }, 404);
 }

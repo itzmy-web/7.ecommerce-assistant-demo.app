@@ -19,6 +19,7 @@ import type {
   StoreInventorySummary,
   UserAccount,
   WorkspaceAccess,
+  StoreGrant,
 } from "@/types";
 import { authHeaders, workspaceAuthHeaders } from "./session";
 
@@ -107,6 +108,24 @@ export async function getStoreInventoryMovements(id: string): Promise<StoreInven
     const response = await fetch(`${API_BASE_URL}/api/v1/stores/${id}/inventory-movements`, {
       headers: await authHeaders(),
       cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    return response.json();
+  } catch {
+    return [];
+  }
+}
+
+/** 请求后端获取店铺授权列表接口，统一处理认证、Workspace、错误和强类型响应；无权限时返回空列表。 */
+export async function getStoreGrants(id: string): Promise<StoreGrant[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/stores/${id}/grants`, {
+      headers: await authHeaders(),
+      cache: 'no-store',
     });
 
     if (!response.ok) {

@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Package,
+  ShieldCheck,
   Store as StoreIcon,
   Warehouse,
 } from "lucide-react";
@@ -14,9 +15,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { InventoryAdvicePanel } from "@/components/inventory-advice-panel";
-import { getCurrentUser, getProducts, getStore, getStoreInventoryMovements, getStoreInventorySummary } from "@/lib/api";
+import { getCurrentUser, getProducts, getStore, getStoreGrants, getStoreInventoryMovements, getStoreInventorySummary } from "@/lib/api";
 import { getAuthToken } from "@/lib/session";
-import type { StoreInventoryMovementRow, StoreInventoryRow } from "@/types";
+import type { StoreGrant, StoreInventoryMovementRow, StoreInventoryRow } from "@/types";
 import type { Platform, Product } from "@/types";
 
 const platformLabels: Record<Platform, string> = {
@@ -32,7 +33,7 @@ const platformLabels: Record<Platform, string> = {
 
 type StorePageProps = {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ inventory?: string }>;
+  searchParams?: Promise<{ inventory?: string; grant?: string }>;
 };
 
 /** 渲染stores页面；在服务端加载业务数据，并把交互交给对应表单或客户端组件。 */
@@ -59,6 +60,10 @@ export default async function StorePage({ params, searchParams }: StorePageProps
   const workflowSteps = buildStoreWorkflowSteps(store.id, storeProducts, inventorySummary?.rows ?? [], lowStockRows, unmappedProducts);
   const currentUser = token ? await getCurrentUser(token) : null;
   const canEdit = Boolean(currentUser?.permissions.can_edit);
+  // 授权管理仅对 owner / 用户管理员开放；无权限时请求返回空列表，面板也不渲染。
+  const canManageUsers = Boolean(currentUser?.permissions.can_manage_users);
+  const grants = canManageUsers ? await getStoreGrants(id) : [];
+  const grantStatus = query.grant;
 
   return (
     <main className="min-h-screen bg-[#f7f8fb] px-5 py-6 text-slate-950 lg:px-8">
@@ -92,6 +97,12 @@ export default async function StorePage({ params, searchParams }: StorePageProps
             </span>
           </div>
         </header>
+
+        {grantStatus ? (
+          <GrantNotice status={grantStatus} />
+        ) : null}
+
+        {canManageUsers ? <StoreGrantsPanel storeId={store.id} grants={grants} /> : null}
 
         <section className="grid gap-4 md:grid-cols-4">
           <MetricCard label="店铺商品" value={storeProducts.length} icon={Package} />
@@ -270,6 +281,121 @@ export default async function StorePage({ params, searchParams }: StorePageProps
         </section>
       </div>
     </main>
+  );
+}
+
+/** 渲染 GrantNotice 组件，集中展示授权操作结果提示所需的数据与样式。 */
+function GrantNotice({ status }: { status: string }) {
+  const messages: Record<string, { ok: boolean; text: string }> = {
+    saved: { ok: true, text: "店铺授权已保存。" },
+    revoked: { ok: true, text: "店铺授权已撤销。" },
+    failed: { ok: false, text: "授权保存失败：请确认邮箱已注册、角色为 viewer 或 editor。" },
+    revoke_failed: { ok: false, text: "撤销失败：授权可能已被删除。" },
+  };
+  const meta = messages[status];
+  if (!meta) return null;
+  return (
+    <div
+      className={`rounded-md border px-4 py-3 text-sm ${
+        meta.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"
+      }`}
+    >
+      {meta.text}
+    </div>
+  );
+}
+
+/** 渲染 StoreGrantsPanel 组件：店铺级授权管理（按邮箱授权/改角色、撤销授权）。 */
+function StoreGrantsPanel({ storeId, grants }: { storeId: number; grants: StoreGrant[] }) {
+  return (
+    <section className="rounded-md border border-slate-200 bg-white p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-sky-700 text-white">
+          <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 className="text-base font-semibold text-slate-950">店铺授权</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            把本店铺单独授权给指定成员（viewer 只读 / editor 可编辑）；存在任意授权后，普通成员将只能看到被授权的店铺。
+          </p>
+        </div>
+      </div>
+
+      <form
+        action={`/stores/${storeId}/grants`}
+        method="post"
+        className="mt-5 grid gap-4 lg:grid-cols-[1.4fr_180px_auto] lg:items-end"
+      >
+        <input type="hidden" name="_action" value="grant" />
+        <label className="block">
+          <span className="text-sm font-medium text-slate-700">成员邮箱</span>
+          <input
+            name="user_email"
+            type="email"
+            required
+            placeholder="ops@example.com"
+            className="mt-2 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+          />
+        </label>
+        <label className="block">
+          <span className="text-sm font-medium text-slate-700">店铺内角色</span>
+          <select
+            name="role"
+            defaultValue="viewer"
+            className="mt-2 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+          >
+            <option value="viewer">Viewer（只读）</option>
+            <option value="editor">Editor（可编辑）</option>
+          </select>
+        </label>
+        <button
+          type="submit"
+          className="inline-flex h-11 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-slate-800"
+        >
+          保存授权
+        </button>
+      </form>
+
+      <div className="mt-5 overflow-hidden rounded-md border border-slate-200">
+        <div className="hidden grid-cols-[1.2fr_1fr_140px_140px] bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-500 lg:grid">
+          <span>成员</span>
+          <span>邮箱</span>
+          <span>店铺内角色</span>
+          <span>操作</span>
+        </div>
+        {grants.length === 0 ? (
+          <div className="px-4 py-8 text-center text-sm text-slate-500">
+            暂无单独授权。未配置时所有成员都能看到该店铺。
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-200">
+            {grants.map((grant) => (
+              <div key={grant.id} className="grid gap-3 px-4 py-3 text-sm lg:grid-cols-[1.2fr_1fr_140px_140px] lg:items-center">
+                <p className="font-medium text-slate-950">{grant.user_display_name || "未命名成员"}</p>
+                <p className="text-slate-600">{grant.user_email}</p>
+                <span
+                  className={`inline-flex h-7 w-fit items-center rounded-md px-2 text-xs font-medium ${
+                    grant.role === "editor" ? "bg-sky-50 text-sky-700" : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {grant.role === "editor" ? "Editor（可编辑）" : "Viewer（只读）"}
+                </span>
+                <form action={`/stores/${storeId}/grants`} method="post">
+                  <input type="hidden" name="_action" value="revoke" />
+                  <input type="hidden" name="user_id" value={grant.user_id} />
+                  <button
+                    type="submit"
+                    className="inline-flex h-8 items-center rounded-md border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                  >
+                    撤销授权
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
