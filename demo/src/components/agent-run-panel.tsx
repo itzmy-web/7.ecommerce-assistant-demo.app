@@ -18,6 +18,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { AgentDraftOutput, AgentRun, AgentRunStatus } from "@/types";
 
+import { AgentRunEventStream } from "@/components/agent-run-event-stream";
+
 type AgentRunPanelProps = {
   productId: number;
   initialRuns: AgentRun[];
@@ -245,6 +247,7 @@ export function AgentRunPanel({ productId, initialRuns, canEdit }: AgentRunPanel
       </div>
 
       <aside className="grid content-start gap-6">
+        <AgentRunEventStream runId={latestRunId} />
         <div className="rounded-md border border-slate-200 bg-white p-5">
           <div className="flex items-center gap-2">
             <Clock3 className="h-4 w-4 text-slate-500" />

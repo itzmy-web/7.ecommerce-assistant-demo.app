@@ -1,13 +1,16 @@
+import json
+import time
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.agents.contracts import ReviewResumePayload
 from app.api.routes.auth import require_edit_permission, require_view_permission
 from app.db.session import get_db
-from app.models import AgentRun, Product, User
+from app.models import AgentRun, AgentRunEvent, AgentRunStatus, Product, User
 from app.schemas import AgentRunRead, AgentRunReviewCreate
 from app.services.agent_runs import (
     AgentRunConflictError,
@@ -138,3 +141,69 @@ def _get_run_or_404(db: Session, run_id: int) -> AgentRun:
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent run not found")
     return run
+
+
+@router.get("/agent-runs/{run_id}/events/stream")
+def stream_agent_run_events(
+    run_id: int,
+    db: SessionDep,
+    _current_user: Annotated[User, Depends(require_view_permission)],
+) -> StreamingResponse:
+    """SSE 实时事件流：增量推送 AgentRunEvent，终态/超时自动收流。
+
+    事件格式（text/event-stream）：
+      event: agent_event  data: {事件 JSON}
+      event: done         data: {"status": "..."}
+    服务端每秒轮询一次数据库（单实例部署足够），总时长上限 5 分钟。
+    """
+    # 先做一次归属校验（复用 _get_run_or_404 的 workspace 过滤），避免为非法 run 维持连接。
+    _get_run_or_404(db, run_id)
+    # 生成器绑定请求会话的引擎（而非全局 SessionLocal）：测试里依赖覆盖的内存库也能被流式读取。
+    bind = db.get_bind()
+
+    def event_stream():
+        last_event_id = 0
+        deadline = time.time() + _SSE_MAX_SECONDS
+        while time.time() < deadline:
+            with Session(bind=bind) as poll_db:
+                run = poll_db.get(AgentRun, run_id)
+                if run is None:
+                    yield "event: done\ndata: {\"status\": \"not_found\"}\n\n"
+                    return
+                new_events = poll_db.scalars(
+                    select(AgentRunEvent)
+                    .where(AgentRunEvent.run_id == run_id, AgentRunEvent.id > last_event_id)
+                    .order_by(AgentRunEvent.id)
+                ).all()
+                for event in new_events:
+                    last_event_id = event.id
+                    payload = json.dumps(
+                        {
+                            "id": event.id,
+                            "event_type": event.event_type,
+                            "agent_name": event.agent_name,
+                            "operation_name": event.operation_name,
+                            "status": event.status,
+                            "message": event.message,
+                            "created_at": event.created_at.isoformat() if event.created_at else None,
+                        },
+                        ensure_ascii=False,
+                        default=str,
+                    )
+                    yield f"id: {event.id}\nevent: agent_event\ndata: {payload}\n\n"
+                if run.status in _SSE_TERMINAL_STATUSES:
+                    done = json.dumps({"status": run.status}, ensure_ascii=False)
+                    yield f"event: done\ndata: {done}\n\n"
+                    return
+            time.sleep(1.0)
+        yield "event: done\ndata: {\"status\": \"stream_timeout\"}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+_SSE_TERMINAL_STATUSES = {status.value for status in (AgentRunStatus.COMPLETED, AgentRunStatus.FAILED, AgentRunStatus.CANCELLED)}
+_SSE_MAX_SECONDS = 300.0

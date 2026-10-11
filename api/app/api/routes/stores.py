@@ -2,11 +2,15 @@ from datetime import UTC, datetime
 from secrets import token_urlsafe
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.api.routes.auth import require_edit_permission, require_view_permission
+from app.api.routes.auth import (
+    require_edit_permission,
+    require_manage_users_permission,
+    require_view_permission,
+)
 from app.db.session import get_db
 from app.models import (
     InventoryItem,
@@ -31,19 +35,26 @@ from app.schemas import (
     StoreInventorySummary,
     StoreRead,
     StoreUpdate,
+    StoreGrantUpsert,
 )
+from app.services import store_grants
 from app.services.inventory_advice import generate_inventory_advice
 
 router = APIRouter(prefix="/stores", tags=["stores"])
 SessionDep = Annotated[Session, Depends(get_db)]
 
 
-def get_store_or_404(db: Session, store_id: int) -> Store:
+def get_store_or_404(db: Session, store_id: int, user: User | None = None) -> Store:
     """处理获取店铺or404接口；完成身份、Workspace、资源归属和输入校验后返回结构化结果。"""
     store = db.get(Store, store_id)
     workspace_id = db.info.get("workspace_id")
     if store is None or (workspace_id is not None and store.workspace_id != workspace_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Store not found")
+    if user is not None:
+        try:
+            store_grants.assert_store_visible(db, user, workspace_id, store_id)
+        except PermissionError as exc:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     return store
 
 
@@ -69,7 +80,11 @@ def list_stores(
     if workspace_id is not None:
         statement = statement.where(Store.workspace_id == workspace_id)
     statement = statement.order_by(Store.created_at.desc()).offset(offset).limit(limit)
-    return list(db.scalars(statement).all())
+    stores = list(db.scalars(statement).all())
+    allowed = store_grants.visible_store_ids(db, _current_user, workspace_id)
+    if allowed is not None:
+        stores = [s for s in stores if s.id in allowed]
+    return stores
 
 
 @router.post("", response_model=StoreRead, status_code=status.HTTP_201_CREATED)
@@ -105,6 +120,10 @@ def get_store(
     store = db.scalars(statement).first()
     if store is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Store not found")
+    try:
+        store_grants.assert_store_visible(db, _current_user, db.info.get("workspace_id"), store_id)
+    except PermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     return store
 
 
@@ -116,7 +135,7 @@ def get_store_inventory_summary(
 ) -> StoreInventorySummary:
     """处理获取店铺库存汇总接口；完成身份、Workspace、资源归属和输入校验后返回结构化结果。"""
     # 先完成认证、Workspace 与资源归属校验，再进入会产生副作用的服务调用。
-    get_store_or_404(db, store_id)
+    get_store_or_404(db, store_id, _current_user)
     rows = build_store_inventory_rows(db, store_id)
 
     return StoreInventorySummary(
@@ -137,7 +156,7 @@ def generate_store_inventory_advice(
     _current_user: Annotated[User, Depends(require_edit_permission)],
 ) -> StoreInventoryAdviceRead:
     """处理生成店铺库存建议接口；完成身份、Workspace、资源归属和输入校验后返回结构化结果。"""
-    store = get_store_or_404(db, store_id)
+    store = get_store_or_404(db, store_id, _current_user)
     rows = build_store_inventory_rows(db, store_id)
     return StoreInventoryAdviceRead.model_validate(generate_inventory_advice(store, rows))
 
@@ -151,7 +170,7 @@ def list_store_inventory_movements(
 ) -> list[StoreInventoryMovementRow]:
     """处理查询店铺库存movements接口；完成身份、Workspace、资源归属和输入校验后返回结构化结果。"""
     # 先完成认证、Workspace 与资源归属校验，再进入会产生副作用的服务调用。
-    get_store_or_404(db, store_id)
+    get_store_or_404(db, store_id, _current_user)
     statement = (
         select(InventoryMovement, ProductSku, Product)
         .join(ProductSku, InventoryMovement.sku_id == ProductSku.id)
@@ -230,7 +249,7 @@ def update_store(
 ) -> Store:
     """处理更新店铺接口；完成身份、Workspace、资源归属和输入校验后返回结构化结果。"""
     # 先完成认证、Workspace 与资源归属校验，再进入会产生副作用的服务调用。
-    store = get_store_or_404(db, store_id)
+    store = get_store_or_404(db, store_id, _current_user)
     for field, value in payload.model_dump(exclude_unset=True, mode="json").items():
         setattr(store, field, value)
     db.commit()
@@ -251,7 +270,7 @@ def create_platform_account(
 ) -> PlatformAccount:
     """处理创建平台账号接口；完成身份、Workspace、资源归属和输入校验后返回结构化结果。"""
     # 先完成认证、Workspace 与资源归属校验，再进入会产生副作用的服务调用。
-    store = get_store_or_404(db, store_id)
+    store = get_store_or_404(db, store_id, _current_user)
     account = PlatformAccount(store_id=store.id, **payload.model_dump(mode="json"))
     db.add(account)
     db.commit()
@@ -383,3 +402,45 @@ def _authorization_next_action(auth_status: str) -> str:
     if auth_status == "expired":
         return "授权已过期，请重新发起授权。"
     return "授权不可用，请检查平台账号状态或重新授权。"
+
+
+@router.get("/{store_id}/grants")
+def list_store_grants(
+    store_id: int,
+    db: SessionDep,
+    _current_user: Annotated[User, Depends(require_manage_users_permission)],
+) -> list[dict]:
+    """处理列出店铺授权接口；仅 owner / 用户管理员可操作。"""
+    get_store_or_404(db, store_id, _current_user)
+    return store_grants.list_grants(db, store_id)
+
+
+@router.put("/{store_id}/grants")
+def upsert_store_grant(
+    store_id: int,
+    payload: StoreGrantUpsert,
+    db: SessionDep,
+    _current_user: Annotated[User, Depends(require_manage_users_permission)],
+) -> dict:
+    """处理 upsert 店铺授权接口；用户不存在返回 404，角色不合法返回 422。"""
+    get_store_or_404(db, store_id, _current_user)
+    try:
+        return store_grants.upsert_grant(db, store_id, payload.user_email, payload.role)
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+
+
+@router.delete("/{store_id}/grants/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def revoke_store_grant(
+    store_id: int,
+    user_id: int,
+    db: SessionDep,
+    _current_user: Annotated[User, Depends(require_manage_users_permission)],
+) -> Response:
+    """处理撤销店铺授权接口；授权不存在返回 404。"""
+    get_store_or_404(db, store_id, _current_user)
+    if not store_grants.revoke_grant(db, store_id, user_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="授权不存在")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

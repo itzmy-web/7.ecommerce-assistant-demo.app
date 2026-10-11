@@ -570,6 +570,23 @@ export async function GET(request: Request, { params }: Params) {
     return run ? json(run) : json({ detail: "run 不存在" }, 404);
   }
 
+  // ── agent-runs SSE 事件流（演示版：一次性回放既有事件后立即收流） ──
+  const streamMatch = route.match(/^agent-runs\/(\d+)\/events\/stream$/);
+  if (streamMatch) {
+    const run = AGENT_RUNS.find((r) => r.id === Number(streamMatch[1]));
+    const frames = (run?.events ?? []).slice(0, 4).map(
+      (event) => `event: agent_event\ndata: ${JSON.stringify(event)}\n\n`,
+    );
+    frames.push("event: done\ndata: {}\n\n");
+    return new Response(frames.join(""), {
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+      },
+    });
+  }
+
   return json({ detail: `演示版未实现该接口：${route}` }, 404);
 }
 

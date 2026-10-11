@@ -75,7 +75,13 @@ def run_registered_agent_workflow(
     lease_owner = lease_owner or create_lease_owner("registered-workflow", run_id)
     with SessionLocal() as db:
         workflow_key = db.scalar(select(AgentRun.workflow_key).where(AgentRun.id == run_id))
-    if workflow_key == "product_diagnosis_optimization":
+    # 注册表驱动的实现分派：旧版商品级图不再是硬编码特例，而是注册表里的
+    # implementation="legacy_product_graph" 条目；后续旧图退役只需在注册表切换实现。
+    try:
+        resolved = get_workflow(workflow_key)
+    except KeyError:
+        resolved = None
+    if resolved is not None and resolved.implementation == "legacy_product_graph":
         from app.services.agent_runs import run_agent_workflow
 
         run_agent_workflow(run_id, resume_payload, lease_owner=lease_owner)

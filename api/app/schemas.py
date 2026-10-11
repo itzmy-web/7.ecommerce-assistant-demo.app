@@ -965,6 +965,11 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class StoreGrantUpsert(BaseModel):
+    user_email: str = Field(min_length=3, max_length=255)
+    role: str = Field(default="viewer", pattern=r"^(viewer|editor)$")
+
+
 class SmsSendRequest(BaseModel):
     phone: str = Field(min_length=11, max_length=11, pattern=r"^1\d{10}$")
 

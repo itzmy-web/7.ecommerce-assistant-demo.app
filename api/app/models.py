@@ -406,6 +406,30 @@ class Store(TimestampMixin, Base):
         back_populates="store",
         cascade="all, delete-orphan",
     )
+    grants: Mapped[list["StoreGrant"]] = relationship(
+        back_populates="store",
+        cascade="all, delete-orphan",
+    )
+
+
+class StoreGrant(TimestampMixin, Base):
+    """店铺级授权：把某个用户限定到指定店铺的细粒度权限（viewer/editor）。
+
+    语义（渐进收紧）：workspace 的 owner / 用户管理员始终可见全部店铺；
+    一旦某店铺存在任意 grant 记录，普通成员只能看到被授予的店铺。
+    """
+
+    __tablename__ = "store_grants"
+    __table_args__ = (
+        UniqueConstraint("store_id", "user_id", name="uq_store_grant"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    store_id: Mapped[int] = mapped_column(ForeignKey("stores.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(20), default="viewer", nullable=False)
+
+    store: Mapped[Store] = relationship(back_populates="grants")
 
 
 class PlatformAccount(TimestampMixin, Base):

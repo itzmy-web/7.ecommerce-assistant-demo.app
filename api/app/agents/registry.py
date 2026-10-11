@@ -41,6 +41,9 @@ class WorkflowDefinition:
     required_context_any: tuple[str, ...]
     default_risk_level: AgentRiskLevel
     enabled: bool = True
+    # 实现通道：platform=通用平台图；legacy_product_graph=旧版商品级四节点图。
+    # 双轨收敛第一步：把硬编码特例改为注册表驱动的分派（后续旧图退役只改这里）。
+    implementation: str = "platform"
 
     @property
     def version_manifest(self) -> dict:
@@ -166,6 +169,7 @@ WORKFLOW_REGISTRY: Final[dict[str, WorkflowDefinition]] = {
         (PRODUCT_STRATEGY_AGENT, CREATIVE_STRATEGY_AGENT, QUALITY_COMPLIANCE_AGENT),
         ("product_id",),
         AgentRiskLevel.R2,
+        implementation="legacy_product_graph",
     ),
     "creative_content_production": WorkflowDefinition(
         "creative_content_production",
