@@ -92,8 +92,14 @@ export default async function Home({ searchParams }: HomeProps) {
         <section className="rounded-md border border-cyan-200 bg-gradient-to-r from-cyan-50 via-white to-emerald-50 p-5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-cyan-700 px-2.5 py-1 text-xs font-semibold text-white">演示版 · 使用指南</span>
-            <h2 className="text-base font-semibold text-slate-950">这是一套给电商卖家运营用的 AI 工作台</h2>
+            <h2 className="text-base font-semibold text-slate-950">专为中小电商团队设计的 AI 运营自动化工作台</h2>
           </div>
+          <p className="mt-2 text-sm text-slate-600">
+            三层价值递进：<span className="font-semibold text-slate-900">基础管理</span>（商品 / 店铺 / 库存，把数据管起来）
+            → <span className="font-semibold text-slate-900">智能诊断</span>（AI Agent 体检商品、产出创意与补货建议）
+            → <span className="font-semibold text-slate-900">自动化执行</span>（任务调度 + 高风险操作人工审批），
+            AI 数字人作为创意输出环节的辅助播报工具。
+          </p>
           <div className="mt-3 grid gap-3 text-sm leading-6 text-slate-600 md:grid-cols-3">
             <div>
               <p className="font-semibold text-slate-900">✅ 能体验什么</p>
