@@ -141,11 +141,6 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
       <GenerationJobAutoRefresh active={hasActiveGenerationJobs} />
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <header className="flex flex-col gap-4 border-b border-slate-200 pb-5">
-          <Link href="/" className="inline-flex w-fit items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-950">
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            返回商品池
-          </Link>
-
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-medium text-emerald-700">

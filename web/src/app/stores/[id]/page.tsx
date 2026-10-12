@@ -68,16 +68,6 @@ export default async function StorePage({ params, searchParams }: StorePageProps
   return (
     <main className="min-h-screen bg-[#f7f8fb] px-5 py-6 text-slate-950 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <div>
-          <Link
-            href="/"
-            className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            返回工作台
-          </Link>
-        </div>
-
         <header className="rounded-md border border-slate-200 bg-white p-5">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4">

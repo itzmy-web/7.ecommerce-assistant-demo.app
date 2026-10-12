@@ -39,7 +39,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     return (
       <main className="min-h-screen bg-[#f7f8fb] px-5 py-6 text-slate-950 lg:px-8">
         <div className="mx-auto max-w-5xl">
-          <BackLink />
           <div className="mt-6 rounded-md border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700">
             模型配置读取失败，请确认后端服务已经启动。
           </div>
@@ -53,7 +52,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <BackLink />
             <p className="mt-5 text-sm font-medium text-emerald-700">Model Settings</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950 sm:text-3xl">
               模型配置中心
@@ -360,16 +358,6 @@ function UserManagementPanel({ users }: { users: UserAccount[] }) {
         )}
       </div>
     </section>
-  );
-}
-
-/** 渲染 BackLink 组件，集中展示返回链接所需的数据、状态和操作入口。 */
-function BackLink() {
-  return (
-    <Link href="/" className="inline-flex items-center gap-2 text-sm text-slate-600">
-      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-      返回商品池
-    </Link>
   );
 }
 

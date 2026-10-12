@@ -3,13 +3,17 @@ from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Response, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.routes.auth import require_edit_permission
+from app.api.routes.auth import require_edit_permission, require_view_permission
 from app.db.session import get_db
 from app.models import (
     AdExperiment,
+    AgentApproval,
+    AgentApprovalStatus,
+    AgentTask,
+    AgentTaskStatus,
     AdRecommendation,
     Competitor,
     CompetitorMonitor,
@@ -21,6 +25,7 @@ from app.models import (
     GenerationJobEvent,
     GenerationJobKind,
     GenerationJobStatus,
+    InventoryItem,
     PerformanceRecord,
     Platform,
     PlatformAccount,
@@ -516,3 +521,40 @@ def create_inventory_item_lock(db: Session, item, locked_quantity: int) -> None:
         reason="演示订单锁定",
         operator_name="系统演示",
     )
+
+
+@router.get("/sidebar-summary")
+def sidebar_summary(
+    db: SessionDep,
+    _current_user: Annotated[User, Depends(require_view_permission)],
+) -> dict:
+    """处理侧栏徽标汇总接口；轻量计数，供全局导航展示实时规模。"""
+    products = db.scalar(select(func.count(Product.id))) or 0
+    stores = db.scalar(select(func.count(Store.id))) or 0
+    low_stock_skus = (
+        db.scalar(
+            select(func.count(InventoryItem.id)).where(
+                (InventoryItem.quantity - InventoryItem.locked_quantity) <= InventoryItem.warning_threshold
+            )
+        )
+        or 0
+    )
+    pending_approvals = (
+        db.scalar(select(func.count(AgentApproval.id)).where(AgentApproval.status == AgentApprovalStatus.PENDING))
+        or 0
+    )
+    active_tasks = (
+        db.scalar(
+            select(func.count(AgentTask.id)).where(
+                AgentTask.status.in_([AgentTaskStatus.QUEUED, AgentTaskStatus.RUNNING])
+            )
+        )
+        or 0
+    )
+    return {
+        "products": products,
+        "stores": stores,
+        "low_stock_skus": low_stock_skus,
+        "pending_approvals": pending_approvals,
+        "active_tasks": active_tasks,
+    }

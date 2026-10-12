@@ -47,12 +47,6 @@ export default async function AutomationPage() {
         <p className="text-sm text-slate-500">
           请确认后端服务已启动且版本包含 /api/v1/automation/overview 接口。
         </p>
-        <Link
-          href="/"
-          className="mt-2 rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:border-violet-300 hover:text-violet-700"
-        >
-          返回首页
-        </Link>
       </main>
     );
   }
@@ -70,12 +64,6 @@ export default async function AutomationPage() {
             {formatTime(overview.generated_at)}
           </p>
         </div>
-        <Link
-          href="/"
-          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:border-violet-300 hover:text-violet-700"
-        >
-          返回首页
-        </Link>
       </header>
 
       {/* 运行概况数字带 */}

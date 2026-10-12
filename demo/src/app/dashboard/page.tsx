@@ -67,12 +67,6 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
           >
             导出报告
           </Link>
-          <Link
-            href="/"
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:border-sky-300 hover:text-sky-700"
-          >
-            返回工作台
-          </Link>
         </div>
       </header>
 

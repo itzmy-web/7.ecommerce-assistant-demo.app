@@ -604,6 +604,11 @@ export async function POST(request: Request, { params }: Params) {
     return json({ access_token: "demo-token-not-real", token_type: "bearer", user: DEMO_USER });
   }
 
+  // ── 侧栏徽标汇总（演示固定数字） ──
+  if (route === "workspace/sidebar-summary") {
+    return json({ products: 3, stores: 2, low_stock_skus: 3, pending_approvals: 1, active_tasks: 1 });
+  }
+
   // ── 创建类操作：返回带 id 的最小合法对象，让 UI 走成功分支 ──
   const createRoutes: Record<string, () => unknown> = {
     products: () => ({ ...PRODUCTS[0], id: nextId(PRODUCTS), name: "新建演示商品", created_at: iso(0), updated_at: iso(0) }),

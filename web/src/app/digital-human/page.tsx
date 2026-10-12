@@ -30,12 +30,6 @@ export default async function DigitalHumanPage() {
             魔珐星云 3D 数字人：连接后可驱动 TA 朗读任意文案，用于店铺播报与运营演示。
           </p>
         </div>
-        <Link
-          href="/"
-          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:border-violet-300 hover:text-violet-700"
-        >
-          返回首页
-        </Link>
       </header>
 
       {credentials ? (

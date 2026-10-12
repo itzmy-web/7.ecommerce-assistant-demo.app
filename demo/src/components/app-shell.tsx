@@ -11,38 +11,77 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 
-import { DigitalHumanBar } from "@/components/digital-human-bar";
+import { DigitalHumanFab } from "@/components/digital-human-fab";
+
+type SidebarSummary = {
+  products: number;
+  stores: number;
+  low_stock_skus: number;
+  pending_approvals: number;
+  active_tasks: number;
+};
 
 type NavItem = {
   href: string;
   label: string;
   icon: ComponentType<{ className?: string }>;
   exact?: boolean;
+  badgeKey?: keyof SidebarSummary;
+  badgeTone?: "slate" | "amber" | "rose" | "sky";
 };
 
-/** 主功能导航：让用户在任意页面都能一眼看到系统有哪些能力并随时切换。 */
+/** 主功能导航：让用户在任意页面都能一眼看到系统有哪些能力并随时切换；badgeKey 指向汇总里的实时数量。 */
 const navItems: NavItem[] = [
-  { href: "/", label: "工作台", icon: LayoutGrid, exact: true },
-  { href: "/dashboard", label: "数据看板", icon: BarChart3 },
-  { href: "/automation", label: "自动化任务", icon: Timer },
-  { href: "/agent", label: "Agent 中心", icon: Bot },
+  { href: "/", label: "工作台", icon: LayoutGrid, exact: true, badgeKey: "products", badgeTone: "slate" },
+  { href: "/dashboard", label: "数据看板", icon: BarChart3, badgeKey: "low_stock_skus", badgeTone: "amber" },
+  { href: "/automation", label: "自动化任务", icon: Timer, badgeKey: "active_tasks", badgeTone: "sky" },
+  { href: "/agent", label: "Agent 中心", icon: Bot, badgeKey: "pending_approvals", badgeTone: "rose" },
   { href: "/imports", label: "导入中心", icon: ClipboardList },
   { href: "/digital-human", label: "AI 数字人", icon: UserRound },
 ];
 
+const badgeTones: Record<NonNullable<NavItem["badgeTone"]>, string> = {
+  slate: "bg-slate-100 text-slate-600",
+  amber: "bg-amber-100 text-amber-700",
+  rose: "bg-rose-100 text-rose-700",
+  sky: "bg-sky-100 text-sky-700",
+};
+
 /**
  * 渲染 AppShell 组件：登录页直接透传；其余页面套左侧固定导航（桌面）+
- * 顶部横滑导航（移动端），页面内容整体右移，不改动任何既有页面结构。
+ * 顶部横滑导航（移动端）+ 数字人悬浮球，页面内容整体右移，不改动任何既有页面结构。
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  if (!pathname || pathname.startsWith("/login")) {
+  const [summary, setSummary] = useState<SidebarSummary | null>(null);
+  const isLoginPage = !pathname || pathname.startsWith("/login");
+
+  const loadSummary = useCallback(async () => {
+    if (isLoginPage) return;
+    try {
+      const response = await fetch("/sidebar-summary", { cache: "no-store" });
+      if (!response.ok) return;
+      setSummary((await response.json()) as SidebarSummary);
+    } catch {
+      // 徽标拉取失败不打断导航，下一轮轮询继续。
+    }
+  }, [isLoginPage]);
+
+  useEffect(() => {
+    void loadSummary();
+    const timer = window.setInterval(() => void loadSummary(), 60_000);
+    return () => window.clearInterval(timer);
+  }, [loadSummary]);
+
+  if (isLoginPage) {
     return <>{children}</>;
   }
 
   const isActive = (item: NavItem) => (item.exact ? pathname === "/" : pathname.startsWith(item.href));
+  const badgeValue = (item: NavItem) => (item.badgeKey && summary ? summary[item.badgeKey] : 0);
 
   return (
     <div className="min-h-screen">
@@ -62,6 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {navItems.map((item) => {
             const active = isActive(item);
             const Icon = item.icon;
+            const badge = badgeValue(item);
             return (
               <Link
                 key={item.href}
@@ -73,7 +113,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 }`}
               >
                 <Icon className={`h-4.5 w-4.5 shrink-0 ${active ? "text-emerald-700" : "text-slate-400"}`} aria-hidden="true" />
-                {item.label}
+                <span className="flex-1 truncate">{item.label}</span>
+                {item.badgeKey && badge > 0 ? (
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badgeTones[item.badgeTone ?? "slate"]}`}>
+                    {badge}
+                  </span>
+                ) : null}
               </Link>
             );
           })}
@@ -101,6 +146,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="flex gap-1 overflow-x-auto px-3 pb-2 pt-2">
           {navItems.map((item) => {
             const active = isActive(item);
+            const badge = badgeValue(item);
             return (
               <Link
                 key={item.href}
@@ -110,6 +156,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 }`}
               >
                 {item.label}
+                {item.badgeKey && badge > 0 ? ` ${badge}` : ""}
               </Link>
             );
           })}
@@ -122,10 +169,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       </div>
 
-      <div className="lg:pl-60">
-        <DigitalHumanBar />
-        {children}
-      </div>
+      <div className="lg:pl-60">{children}</div>
+
+      {/* 数字人悬浮球：常驻右下角，收起不占页面空间 */}
+      <DigitalHumanFab />
     </div>
   );
 }
