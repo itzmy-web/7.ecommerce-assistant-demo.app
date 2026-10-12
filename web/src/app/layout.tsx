@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+import { AppShell } from "@/components/app-shell";
+
 export const metadata: Metadata = {
   title: "电商运营助手",
   description: "AI 单品运营工作台",
@@ -17,7 +19,9 @@ export default function RootLayout({
       lang="zh-CN"
       className="h-full antialiased"
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }

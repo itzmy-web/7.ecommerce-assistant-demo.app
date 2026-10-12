@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+import { AppShell } from "@/components/app-shell";
+
 export const metadata: Metadata = {
   title: "电商运营助手",
   description: "AI 单品运营工作台",
@@ -18,7 +20,7 @@ export default function RootLayout({
       className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col">
-        {children}
+        <AppShell>{children}</AppShell>
         {/* 演示版水印：数据为内置模拟数据，与本地真实服务区分 */}
         <div className="pointer-events-none fixed bottom-3 right-3 z-50 rounded-full border border-amber-300 bg-amber-50/90 px-3 py-1 text-xs font-medium text-amber-700 shadow-sm">
           演示版 · 数据为模拟数据
