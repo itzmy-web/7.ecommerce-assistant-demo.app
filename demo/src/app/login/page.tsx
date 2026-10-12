@@ -216,7 +216,12 @@ function LoginCard() {
   return (
     <div className="w-full max-w-[420px] rounded-[24px] border border-white/[0.08] bg-[#1e2130]/90 p-8 shadow-[0_28px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl">
       <h1 className="text-2xl font-bold tracking-tight text-white">欢迎使用电商运营助手</h1>
-      <p className="mt-2 text-sm text-slate-400">登录后即可管理店铺、查看数据看板与 AI 数字人</p>
+      <p className="mt-2 text-sm text-slate-400">
+        登录后即可管理店铺、查看数据看板与 AI 数字人
+        <span className="mt-1 block text-xs text-slate-500">
+          演示环境中游客与验证码登录能力一致；数据为公共模拟数据，请勿输入真实业务信息。
+        </span>
+      </p>
 
       <div className="mt-6 flex items-center rounded-2xl bg-[#262a37] p-1.5">
         {TABS.map((t) => (
@@ -239,11 +244,17 @@ function LoginCard() {
       {tab === "phone" && <PhoneForm />}
       {tab === "wechat" && (
         <div className="mt-6">
+          <p className="mb-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-400">
+            演示流程：二维码为模拟样式，扫码动作不会被真实校验。
+          </p>
           <QrPanel kind="wechat" />
         </div>
       )}
       {tab === "alipay" && (
         <div className="mt-6">
+          <p className="mb-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-400">
+            演示流程：二维码为模拟样式，扫码动作不会被真实校验。
+          </p>
           <QrPanel kind="alipay" />
         </div>
       )}
@@ -308,12 +319,24 @@ export default function LoginPage() {
           高风险操作分级管控并需人工审批。让运营真正跑在自动化的轨道上。
         </p>
 
-        <div className="mt-7 grid grid-cols-4 gap-3">
+        {/* 概念原型免责块（醒目位置，非页脚小字）：区分产品规划与演示现实 */}
+        <div className="mt-4 rounded-2xl border border-amber-400/25 bg-amber-400/[0.08] px-5 py-4">
+          <p className="text-sm font-semibold text-amber-300">⚠️ 本页面为产品概念演示原型</p>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-amber-200/80">
+            以下指标为产品设计规划目标；演示环境为交互原型 + 模拟数据，
+            不具备真实修改店铺、执行投放、修改库存的能力，也不会调用任何外部平台接口。
+          </p>
+        </div>
+
+        <p className="mt-6 text-xs font-medium tracking-wide text-slate-500">
+          产品规划指标
+        </p>
+        <div className="mt-2 grid grid-cols-4 gap-3">
           {[
             ["9+", "AI Agent"],
             ["17", "受控工具"],
             ["7", "大工作流"],
-            ["24h", "全天候执行"],
+            ["7×24", "任务调度（生产版）"],
           ].map(([num, label]) => (
             <div
               key={label}
