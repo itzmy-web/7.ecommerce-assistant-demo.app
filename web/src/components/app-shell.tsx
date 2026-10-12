@@ -7,14 +7,13 @@ import {
   LayoutGrid,
   LogOut,
   Timer,
-  UserRound,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 
-import { DigitalHumanFab } from "@/components/digital-human-fab";
+import { HamsterAssistant } from "@/components/hamster-assistant";
 
 type SidebarSummary = {
   products: number;
@@ -40,7 +39,6 @@ const navItems: NavItem[] = [
   { href: "/automation", label: "自动化任务", icon: Timer, badgeKey: "active_tasks", badgeTone: "sky" },
   { href: "/agent", label: "Agent 中心", icon: Bot, badgeKey: "pending_approvals", badgeTone: "rose" },
   { href: "/imports", label: "导入中心", icon: ClipboardList },
-  { href: "/digital-human", label: "AI 数字人", icon: UserRound },
 ];
 
 const badgeTones: Record<NonNullable<NavItem["badgeTone"]>, string> = {
@@ -171,8 +169,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="lg:pl-60">{children}</div>
 
-      {/* 数字人悬浮球：常驻右下角，收起不占页面空间 */}
-      <DigitalHumanFab />
+      {/* 2D 仓鼠 AI 助手：常驻右下角，可动可互动 */}
+      <HamsterAssistant />
     </div>
   );
 }
