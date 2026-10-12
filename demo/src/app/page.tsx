@@ -88,6 +88,27 @@ export default async function Home({ searchParams }: HomeProps) {
   return (
     <main className="min-h-screen bg-[#f7f8fb] px-5 py-6 text-slate-950 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        {/* 演示引导卡：定位 / 能做什么 / 边界 / 玩法，让新用户 30 秒上手 */}
+        <section className="rounded-md border border-cyan-200 bg-gradient-to-r from-cyan-50 via-white to-emerald-50 p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-cyan-700 px-2.5 py-1 text-xs font-semibold text-white">演示版 · 使用指南</span>
+            <h2 className="text-base font-semibold text-slate-950">这是一套给电商卖家运营用的 AI 工作台</h2>
+          </div>
+          <div className="mt-3 grid gap-3 text-sm leading-6 text-slate-600 md:grid-cols-3">
+            <div>
+              <p className="font-semibold text-slate-900">✅ 能体验什么</p>
+              <p>商品池与店铺管理、AI 诊断与创意方案、Agent 任务与人工审批、库存预警与补货建议、数据看板、自动化任务、右下角 AI 数字人播报。</p>
+            </div>
+            <div>
+              <p className="font-semibold text-slate-900">🎮 怎么玩</p>
+              <p>用左侧栏切换模块；进任意店铺详情可试「店铺授权」；Agent 中心发任务后打开运行详情看实时事件流；登录验证码会直接显示在页面上。</p>
+            </div>
+            <div>
+              <p className="font-semibold text-slate-900">⚠️ 能力边界</p>
+              <p>全部数据为内置模拟数据，不会真实调用电商平台 API、不能真实下单；AI 生成内容仅供参考，正式使用请人工复核；演示输入不会被永久存储。</p>
+            </div>
+          </div>
+        </section>
         <div className="flex justify-end gap-2">
           <Link
             href="/agent"
