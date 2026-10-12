@@ -89,8 +89,14 @@ export function HamsterAssistant() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: "hamster", text: WELCOME }]);
   const logRef = useRef<HTMLDivElement | null>(null);
-  const dragRef = useRef({ startX: 0, startY: 0, posX: 0, posY: 0, moved: false });
   const bubbleTimer = useRef<number | null>(null);
+  /** pos 的镜像 ref：window 级指针监听里读取最新位置，不依赖重渲染。 */
+  const posRef = useRef(pos);
+  const dragRef = useRef({ active: false, startX: 0, startY: 0, posX: 0, posY: 0, moved: false });
+
+  useEffect(() => {
+    posRef.current = pos;
+  }, [pos]);
 
   /** 恢复 localStorage 位置并挂初始位置。 */
   useEffect(() => {
@@ -141,45 +147,62 @@ export function HamsterAssistant() {
     showBubble("吱吱！想聊点什么？");
   }, [showBubble]);
 
-  /** 拖动：pointerdown 记起点，move 超过 6px 才算拖动（区分单击）。 */
-  const onPointerDown = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      dragRef.current = {
-        startX: event.clientX,
-        startY: event.clientY,
-        posX: pos.x,
-        posY: pos.y,
-        moved: false,
-      };
+  /**
+   * 拖动（window 级监听版）：pointerdown 在仓鼠上记起点并激活拖动；
+   * move/up 监听挂在 window 上——鼠标移出元素、在页面任意位置松手都能正确结束，
+   * 彻底修复"松手后停不下来、要晃回仓鼠身上才停"的卡死问题。
+   */
+  const onPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    dragRef.current = {
+      active: true,
+      startX: event.clientX,
+      startY: event.clientY,
+      posX: posRef.current.x,
+      posY: posRef.current.y,
+      moved: false,
+    };
+    try {
       event.currentTarget.setPointerCapture(event.pointerId);
-    },
-    [pos],
-  );
-
-  const onPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    const dx = event.clientX - drag.startX;
-    const dy = event.clientY - drag.startY;
-    if (!drag.moved && Math.hypot(dx, dy) < 6) return;
-    drag.moved = true;
-    setPos(clampPos(drag.posX + dx, drag.posY + dy));
+    } catch {
+      // 捕获失败不影响：window 级监听兜底。
+    }
   }, []);
 
-  const onPointerUp = useCallback(() => {
-    const drag = dragRef.current;
-    if (drag.moved) {
-      setPos((current) => {
+  useEffect(() => {
+    const onMove = (event: PointerEvent) => {
+      const drag = dragRef.current;
+      if (!drag.active) return;
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+      if (!drag.moved && Math.hypot(dx, dy) < 6) return; // 6px 内视为单击
+      drag.moved = true;
+      const next = clampPos(drag.posX + dx, drag.posY + dy);
+      posRef.current = next;
+      setPos(next);
+    };
+    const onUp = () => {
+      const drag = dragRef.current;
+      if (!drag.active) return;
+      drag.active = false; // 任何情况下先结束拖动，保证必定能停
+      if (drag.moved) {
         try {
-          window.localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(current));
+          window.localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(posRef.current));
         } catch {
           // 存储不可用时不影响功能。
         }
-        return current;
-      });
-    } else {
-      // 单击：切换三键菜单。
-      setMenuOpen((current) => !current);
-    }
+      } else {
+        setMenuOpen((current) => !current); // 未移动 = 单击：切换三键菜单
+      }
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
   }, []);
 
   /** 发送消息：业务优先 → 闲聊 → 兜底。 */
@@ -197,7 +220,7 @@ export function HamsterAssistant() {
       {bubble && !chatOpen ? (
         <div
           className="fixed z-50 max-w-[220px] rounded-2xl rounded-br-sm border border-amber-200 bg-amber-50/95 px-3 py-2 text-xs leading-5 text-amber-800 shadow-sm print:hidden"
-          style={{ left: pos.x - 150, top: pos.y - 8, animation: "hamster-bob 2.6s ease-in-out infinite" }}
+          style={{ left: Math.max(8, pos.x - 150), top: Math.max(8, pos.y - 8), animation: "hamster-bob 2.6s ease-in-out infinite" }}
         >
           {bubble}
         </div>
@@ -297,7 +320,8 @@ export function HamsterAssistant() {
               value={input}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter") ask();
+                // 中文输入法组词确认的 Enter 不触发发送（isComposing 守卫）
+                if (event.key === "Enter" && !event.nativeEvent.isComposing) ask();
               }}
               placeholder="问栗子点什么吱…"
               className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-amber-400"
@@ -316,8 +340,6 @@ export function HamsterAssistant() {
       {/* 仓鼠本体：可拖动 + 单击弹菜单 + 跳跃动画 */}
       <div
         onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
         role="button"
         tabIndex={0}
         aria-label="仓鼠助手栗子（可拖动，单击打开菜单）"
