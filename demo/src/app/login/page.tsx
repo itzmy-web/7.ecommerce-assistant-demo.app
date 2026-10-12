@@ -194,6 +194,9 @@ function PhoneForm() {
 
       <p className="text-xs leading-relaxed text-slate-500">
         当前为云端演示模式：验证码由前端自动生成并填入，任意手机号均可登录。
+        <span className="mt-1 block text-slate-500">
+          💡 若首次打开转圈或超时，是演示服务冷启动，刷新一次即可正常访问。
+        </span>
       </p>
 
       <button
