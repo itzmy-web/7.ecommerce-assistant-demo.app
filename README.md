@@ -199,3 +199,12 @@ npm.cmd ci && npm.cmd run dev             # 起前端（127.0.0.1:3000）
    真实部署务必用 `web/` + `api/` 全栈。
 6. **本机构建注意**：沙箱环境 Next.js build 会被 safe-delete shim 拦（批量删除 ≥50 文件），
    规避：先删 `.next` 再 `CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run build`；Docker 容器内构建不受影响。
+
+**后续迭代路线图**（按优先级，接手人可直接排期）：
+
+| 优先级 | 迭代项 | 要点 | 建议挂载点 |
+|---|---|---|---|
+| P1 | **商品文件上传分析** | 支持上传商品 CSV / 竞品截图 / 文档，交给文本模型（截图走视觉模型）做分析；入库或临时解析均可 | BFF 上传路由 + `api/app/api/routes/workspace.py` 新增 upload 端点；视觉模型配置已有（`IMAGE_*`） |
+| P1 | **CSV 批量导出** | 把 AI 生成的标题 / 卖点 / 客服话术按商品批量导出 CSV（运营拿去直接用） | 参照现有模板下载实现（`/workspace/templates/*.csv` 的 Response 写法） |
+| P2 | **可视化图表** | 竞品对比表 / 价格雷达图等结构化展示，替代纯文本结论 | web 已引入图表组件（`web/src/components/charts/`），直接复用 |
+| P2 | **违禁词检测** | AI 输出完成后自动扫描"最 / 第一 / 绝对"等极限词并高亮提示，规避广告法风险 | 纯前端即可起步：对 `draft_output` / 创意文案做正则+词库扫描；词库放 `api/app/services/` 下随模型输入注入 |
