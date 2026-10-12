@@ -46,8 +46,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      {/* 桌面端左侧固定导航 */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-slate-200 bg-white lg:flex">
+      {/* 桌面端左侧固定导航（打印时隐藏，避免污染导出报告） */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-slate-200 bg-white print:hidden lg:flex">
         <div className="flex items-center gap-3 px-5 pb-5 pt-6">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-700 text-white shadow-sm">
             <Bot className="h-6 w-6" aria-hidden="true" />
@@ -91,7 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* 移动端顶部横滑导航 */}
-      <div className="sticky top-0 z-40 border-b border-slate-200 bg-white lg:hidden">
+      <div className="sticky top-0 z-40 border-b border-slate-200 bg-white print:hidden lg:hidden">
         <div className="flex items-center gap-2 px-4 pt-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-700 text-white">
             <Bot className="h-4.5 w-4.5" aria-hidden="true" />
@@ -113,6 +113,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+          <Link
+            href="/logout"
+            className="whitespace-nowrap rounded-full bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-100"
+          >
+            退出登录
+          </Link>
         </nav>
       </div>
 

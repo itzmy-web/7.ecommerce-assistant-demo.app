@@ -42,7 +42,7 @@ export function DigitalHumanBar() {
   }
 
   return (
-    <section className="border-b border-violet-100 bg-gradient-to-r from-violet-50 via-white to-cyan-50">
+    <section className="border-b border-violet-100 bg-gradient-to-r from-violet-50 via-white to-cyan-50 print:hidden">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-2.5 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-sm">
