@@ -6,13 +6,14 @@ import {
   ClipboardList,
   LayoutGrid,
   LogOut,
-  Settings,
   Timer,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, ReactNode } from "react";
+
+import { DigitalHumanBar } from "@/components/digital-human-bar";
 
 type NavItem = {
   href: string;
@@ -29,7 +30,6 @@ const navItems: NavItem[] = [
   { href: "/agent", label: "Agent 中心", icon: Bot },
   { href: "/imports", label: "导入中心", icon: ClipboardList },
   { href: "/digital-human", label: "AI 数字人", icon: UserRound },
-  { href: "/settings", label: "模型配置", icon: Settings },
 ];
 
 /**
@@ -116,7 +116,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       </div>
 
-      <div className="lg:pl-60">{children}</div>
+      <div className="lg:pl-60">
+        <DigitalHumanBar />
+        {children}
+      </div>
     </div>
   );
 }
