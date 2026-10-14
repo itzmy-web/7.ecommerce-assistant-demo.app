@@ -6,6 +6,8 @@ import {
   ClipboardList,
   LayoutGrid,
   LogOut,
+  Package,
+  Store as StoreIcon,
   Timer,
 } from "lucide-react";
 import Link from "next/link";
@@ -32,10 +34,13 @@ type NavItem = {
   badgeTone?: "slate" | "amber" | "rose" | "sky";
 };
 
-/** 主功能导航：让用户在任意页面都能一眼看到系统有哪些能力并随时切换；badgeKey 指向汇总里的实时数量。 */
+/** 主功能导航：让用户在任意页面都能一眼看到系统有哪些能力并随时切换；badgeKey 指向汇总里的实时数量。
+ * 2026-10-14 拆分：新增「店铺管理 / 商品池」两个功能页入口（原首页堆叠内容已拆到对应页面）。 */
 const navItems: NavItem[] = [
-  { href: "/", label: "工作台", icon: LayoutGrid, exact: true, badgeKey: "products", badgeTone: "slate" },
-  { href: "/dashboard", label: "数据看板", icon: BarChart3, badgeKey: "low_stock_skus", badgeTone: "amber" },
+  { href: "/", label: "工作台总览", icon: LayoutGrid, exact: true },
+  { href: "/stores", label: "店铺管理", icon: StoreIcon, badgeKey: "stores", badgeTone: "slate" },
+  { href: "/products", label: "商品池", icon: Package, badgeKey: "products", badgeTone: "amber" },
+  { href: "/dashboard", label: "数据看板", icon: BarChart3, badgeKey: "low_stock_skus", badgeTone: "sky" },
   { href: "/automation", label: "自动化任务", icon: Timer, badgeKey: "active_tasks", badgeTone: "sky" },
   { href: "/agent", label: "Agent 中心", icon: Bot, badgeKey: "pending_approvals", badgeTone: "rose" },
   { href: "/imports", label: "导入中心", icon: ClipboardList },
