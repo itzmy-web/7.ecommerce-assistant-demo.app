@@ -430,6 +430,21 @@ const CSV_TEMPLATES: Record<string, string> = {
   "performance-records.csv": "product_name,period_start,period_end,impressions,clicks,conversions,spend,revenue\n演示商品A,2026-10-01,2026-10-07,12000,420,13,210.00,620.00\n",
 };
 
+/**
+ * 侧栏徽标汇总：从演示数据实时推导，保证导航徽标与列表数量一致。
+ * 2026-10-14 修复：此前 mock 只在 POST 里实现该接口，而前端 app-shell / sidebar-summary 走 GET，
+ * 导致演示版侧栏徽标恒为空白（请求落到 404 分支）。POST 与 GET 现在共用本函数。
+ */
+function buildSidebarSummary() {
+  return {
+    products: PRODUCTS.length,
+    stores: STORES.length,
+    low_stock_skus: SKUS.filter((s) => s.inventory_item.quantity <= s.inventory_item.warning_threshold).length,
+    pending_approvals: AGENT_APPROVALS.filter((a) => a.status === "pending").length,
+    active_tasks: AGENT_TASKS.filter((t) => ["queued", "running", "awaiting_approval"].includes(t.status)).length,
+  };
+}
+
 // ───────────────────────── 路由 ─────────────────────────
 
 export async function GET(request: Request, { params }: Params) {
@@ -445,6 +460,8 @@ export async function GET(request: Request, { params }: Params) {
     stores: () => STORES,
     users: () => USERS,
     "model-settings": () => MODEL_SETTINGS,
+    // 侧栏徽标汇总（GET）：导航 60s 轮询本接口
+    "workspace/sidebar-summary": () => buildSidebarSummary(),
     "dashboard/overview": () => ({
       product_count: PRODUCTS.length,
       active_sku_count: SKUS.length,
@@ -604,9 +621,9 @@ export async function POST(request: Request, { params }: Params) {
     return json({ access_token: "demo-token-not-real", token_type: "bearer", user: DEMO_USER });
   }
 
-  // ── 侧栏徽标汇总（演示固定数字） ──
+  // ── 侧栏徽标汇总（POST 兼容保留，与 GET 共用同一份推导逻辑） ──
   if (route === "workspace/sidebar-summary") {
-    return json({ products: 3, stores: 2, low_stock_skus: 3, pending_approvals: 1, active_tasks: 1 });
+    return json(buildSidebarSummary());
   }
 
   // ── 创建类操作：返回带 id 的最小合法对象，让 UI 走成功分支 ──
