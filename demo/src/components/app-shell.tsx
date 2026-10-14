@@ -4,11 +4,15 @@ import {
   BarChart3,
   Bot,
   ClipboardList,
+  FileText,
+  ImageIcon,
   LayoutGrid,
   LogOut,
+  Megaphone,
   Package,
   Store as StoreIcon,
   Timer,
+  UserRound,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -34,17 +38,42 @@ type NavItem = {
   badgeTone?: "slate" | "amber" | "rose" | "sky";
 };
 
-/** 主功能导航：让用户在任意页面都能一眼看到系统有哪些能力并随时切换；badgeKey 指向汇总里的实时数量。
- * 2026-10-14 拆分：新增「店铺管理 / 商品池」两个功能页入口（原首页堆叠内容已拆到对应页面）。 */
-const navItems: NavItem[] = [
-  { href: "/", label: "工作台总览", icon: LayoutGrid, exact: true },
-  { href: "/stores", label: "店铺管理", icon: StoreIcon, badgeKey: "stores", badgeTone: "slate" },
-  { href: "/products", label: "商品池", icon: Package, badgeKey: "products", badgeTone: "amber" },
-  { href: "/dashboard", label: "数据看板", icon: BarChart3, badgeKey: "low_stock_skus", badgeTone: "sky" },
-  { href: "/automation", label: "自动化任务", icon: Timer, badgeKey: "active_tasks", badgeTone: "sky" },
-  { href: "/agent", label: "Agent 中心", icon: Bot, badgeKey: "pending_approvals", badgeTone: "rose" },
-  { href: "/imports", label: "导入中心", icon: ClipboardList },
+/**
+ * 侧栏任务栏：所有功能都从这里进入（2026-10-14 调整——原首页「功能入口」卡片全部并入侧栏，首页不再重复展示）。
+ * 按「基础管理 / 单品运营 / 智能执行」三段分组；badgeKey 指向汇总里的实时数量。
+ * 「补商品信息 / 投放建议 / 周期复盘」经 /workflows/* 跳转路由落到首个商品的对应标签页。
+ */
+const navGroups: Array<{ label: string; items: NavItem[] }> = [
+  {
+    label: "基础管理",
+    items: [
+      { href: "/", label: "工作台总览", icon: LayoutGrid, exact: true },
+      { href: "/stores", label: "店铺管理", icon: StoreIcon, badgeKey: "stores", badgeTone: "slate" },
+      { href: "/products", label: "商品池", icon: Package, badgeKey: "products", badgeTone: "amber" },
+      { href: "/imports", label: "导入中心", icon: ClipboardList },
+    ],
+  },
+  {
+    label: "单品运营",
+    items: [
+      { href: "/workflows/product-info", label: "补商品信息", icon: ImageIcon },
+      { href: "/workflows/ads", label: "投放建议", icon: Megaphone },
+      { href: "/workflows/review", label: "周期复盘", icon: FileText },
+    ],
+  },
+  {
+    label: "智能执行",
+    items: [
+      { href: "/dashboard", label: "数据看板", icon: BarChart3, badgeKey: "low_stock_skus", badgeTone: "sky" },
+      { href: "/automation", label: "自动化任务", icon: Timer, badgeKey: "active_tasks", badgeTone: "sky" },
+      { href: "/agent", label: "Agent 中心", icon: Bot, badgeKey: "pending_approvals", badgeTone: "rose" },
+      { href: "/digital-human", label: "AI 数字人", icon: UserRound },
+    ],
+  },
 ];
+
+/** 移动端横滑导航用的扁平列表（移动端不展示分组标题）。 */
+const flatNavItems: NavItem[] = navGroups.flatMap((group) => group.items);
 
 const badgeTones: Record<NonNullable<NavItem["badgeTone"]>, string> = {
   slate: "bg-white/15 text-orange-100",
@@ -115,31 +144,40 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* 桌面端深色左侧固定导航 */}
       <aside className="fixed inset-y-0 left-0 top-14 z-40 hidden w-60 flex-col bg-[#23262f] print:hidden lg:flex">
-        <nav className="mt-4 flex-1 space-y-1 overflow-y-auto px-3">
-          {navItems.map((item) => {
-            const active = isActive(item);
-            const Icon = item.icon;
-            const badge = badgeValue(item);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
-                  active
-                    ? "bg-gradient-to-r from-orange-500 to-red-500 font-semibold text-white shadow-md shadow-orange-500/25"
-                    : "text-slate-300 hover:bg-white/[0.07] hover:text-white"
-                }`}
-              >
-                <Icon className={`h-4.5 w-4.5 shrink-0 ${active ? "text-white" : "text-slate-400"}`} aria-hidden="true" />
-                <span className="flex-1 truncate">{item.label}</span>
-                {item.badgeKey && badge > 0 ? (
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badgeTones[item.badgeTone ?? "slate"]}`}>
-                    {badge}
-                  </span>
-                ) : null}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+          {navGroups.map((group) => (
+            <div key={group.label} className="pb-1">
+              <p className="px-3 pb-1.5 pt-3 text-[11px] font-semibold tracking-[0.16em] text-slate-500">
+                {group.label}
+              </p>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const active = isActive(item);
+                  const Icon = item.icon;
+                  const badge = badgeValue(item);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+                        active
+                          ? "bg-gradient-to-r from-orange-500 to-red-500 font-semibold text-white shadow-md shadow-orange-500/25"
+                          : "text-slate-300 hover:bg-white/[0.07] hover:text-white"
+                      }`}
+                    >
+                      <Icon className={`h-4.5 w-4.5 shrink-0 ${active ? "text-white" : "text-slate-400"}`} aria-hidden="true" />
+                      <span className="flex-1 truncate">{item.label}</span>
+                      {item.badgeKey && badge > 0 ? (
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badgeTones[item.badgeTone ?? "slate"]}`}>
+                          {badge}
+                        </span>
+                      ) : null}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="border-t border-white/10 px-3 py-3">
@@ -156,7 +194,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* 移动端顶部横滑导航 */}
       <div className="sticky top-14 z-40 border-b border-orange-100 bg-white print:hidden lg:hidden">
         <nav className="flex gap-1 overflow-x-auto px-3 pb-2 pt-2">
-          {navItems.map((item) => {
+          {flatNavItems.map((item) => {
             const active = isActive(item);
             const badge = badgeValue(item);
             return (

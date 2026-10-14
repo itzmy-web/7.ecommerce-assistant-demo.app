@@ -1,33 +1,17 @@
-import {
-  BarChart3,
-  Bot,
-  Boxes,
-  Building2,
-  ClipboardList,
-  Database,
-  Download,
-  FileText,
-  ImageIcon,
-  Megaphone,
-  Package,
-  Settings,
-  Timer,
-  UserRound,
-} from "lucide-react";
+import { Bot, Database, Download, Package, Settings } from "lucide-react";
 import Link from "next/link";
 
-import { FeatureCard, MetricCard } from "@/components/workspace-view";
+import { MetricCard } from "@/components/workspace-view";
 import { getCurrentUser, getProducts, getStores } from "@/lib/api";
 import { getAuthToken } from "@/lib/session";
-import type { Product, Store } from "@/types";
 
 type HomeProps = {
   searchParams?: Promise<{ platform?: string; store?: string; demo?: string }>;
 };
 
 /**
- * 工作台总览页（2026-10-14 拆分后）：只保留指标、演示引导与功能入口网格。
- * 原首页的店铺视图 → /stores，商品池 → /products，功能与数据完全保留，仅位置调整。
+ * 工作台总览页（2026-10-14）：只保留使用指南、指标、演示与导入操作。
+ * 各功能入口统一放在左侧任务栏，店铺视图 → /stores，商品池 → /products，功能与数据完全保留。
  */
 export default async function Home({ searchParams }: HomeProps) {
   const query = searchParams ? await searchParams : {};
@@ -38,8 +22,6 @@ export default async function Home({ searchParams }: HomeProps) {
 
   const activeStores = stores.filter((store) => store.status === "active").length;
   const platformCount = new Set([...stores.map((store) => store.platform), ...products.map((product) => product.platform)]).size;
-  const unboundProducts = products.filter((product) => product.store_id === null).length;
-  const features = buildFeatureGrid(products, stores, unboundProducts);
 
   return (
     <main className="min-h-screen bg-[#f7f8fb] px-5 py-6 text-slate-950 lg:px-8">
@@ -116,7 +98,7 @@ export default async function Home({ searchParams }: HomeProps) {
               多平台店铺运营工作台
             </h1>
             <p className="mt-2 text-sm text-slate-500">
-              从总览进入各功能页：店铺管理、商品池、数据看板、自动化任务、Agent 中心与导入中心。
+              全部功能入口都在左侧任务栏：基础管理（店铺 / 商品 / 导入）、单品运营（信息 / 投放 / 复盘）、智能执行（看板 / 自动化 / Agent / 数字人）。
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:w-[560px] sm:grid-cols-4">
@@ -174,122 +156,8 @@ export default async function Home({ searchParams }: HomeProps) {
           </div>
         </section>
 
-        {/* 功能入口网格：按功能分页后，总览页负责把用户送到对应任务栏页面 */}
-        <section>
-          <h2 className="text-sm font-semibold text-slate-950">功能入口</h2>
-          <p className="mt-1 text-sm text-slate-500">每张卡片对应一个独立的功能页，点开只处理这一类事情</p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {features.map((item) => (
-              <FeatureCard key={item.title} {...item} />
-            ))}
-          </div>
-        </section>
+        {/* 功能入口已全部移入左侧任务栏（2026-10-14），总览页不再重复罗列 */}
       </div>
     </main>
   );
-}
-
-/** 构建总览页功能入口网格，从现有业务数据推导稳定的展示模型，不在渲染阶段修改源数据。 */
-function buildFeatureGrid(
-  products: Product[],
-  stores: Store[],
-  unboundProducts: number,
-): Array<{
-  title: string;
-  hint: string;
-  href: string;
-  icon: typeof BarChart3;
-  tone: string;
-  count?: number;
-}> {
-  // 入口卡片只用已有数据提示下一步，不自动创建诊断、素材或投放实验。
-  const missingSellingPoints = products.filter((product) => product.selling_points.length === 0).length;
-  const missingPlatformIds = products.filter((product) => !product.external_product_id).length;
-  const productsReadyForOps = products.filter((product) => product.store_id !== null && product.selling_points.length > 0).length;
-  const activeStores = stores.filter((store) => store.status === "active").length;
-
-  return [
-    {
-      title: "店铺管理",
-      hint: unboundProducts > 0 ? `${unboundProducts} 个商品待绑定店铺` : `共 ${stores.length} 个店铺，${activeStores} 个活跃`,
-      href: "/stores",
-      icon: Building2,
-      tone: "bg-orange-100 text-orange-700",
-      count: stores.length,
-    },
-    {
-      title: "商品池",
-      hint: products.length > 0 ? "进入单品运营闭环：诊断 / 素材 / 投放 / 复盘" : "还没有商品，先去新建或导入",
-      href: "/products",
-      icon: Boxes,
-      tone: "bg-amber-100 text-amber-700",
-      count: products.length,
-    },
-    {
-      title: "导入数据",
-      hint: missingPlatformIds > 0 ? `${missingPlatformIds} 个商品待补平台 ID` : "导入商品 / SKU / 经营数据",
-      href: "/imports",
-      icon: ClipboardList,
-      tone: "bg-orange-100 text-orange-700",
-      count: missingPlatformIds,
-    },
-    {
-      title: "补商品信息",
-      hint: missingSellingPoints > 0 ? `${missingSellingPoints} 个商品待补卖点` : "进入单品运营闭环",
-      href: firstProductHref(products, "overview"),
-      icon: ImageIcon,
-      tone: "bg-amber-100 text-amber-700",
-      count: missingSellingPoints,
-    },
-    {
-      title: "投放建议",
-      hint: productsReadyForOps > 0 ? "从素材和链接生成投放建议" : "先补商品基础信息",
-      href: firstProductHref(products, "ads"),
-      icon: Megaphone,
-      tone: "bg-red-100 text-red-700",
-      count: productsReadyForOps,
-    },
-    {
-      title: "周期复盘",
-      hint: products.length > 0 ? "回填经营数据后生成复盘" : "先创建商品",
-      href: firstProductHref(products, "review"),
-      icon: FileText,
-      tone: "bg-rose-100 text-rose-700",
-      count: products.length,
-    },
-    {
-      title: "数据看板",
-      hint: "关键指标趋势与打印友好导出报告",
-      href: "/dashboard",
-      icon: BarChart3,
-      tone: "bg-orange-100 text-orange-700",
-      count: products.length,
-    },
-    {
-      title: "自动化任务",
-      hint: "系统心跳、竞品监控与活跃任务聚合",
-      href: "/automation",
-      icon: Timer,
-      tone: "bg-amber-100 text-amber-700",
-    },
-    {
-      title: "Agent 中心",
-      hint: "发起工作流、审批高风险操作、查看记忆",
-      href: "/agent",
-      icon: Bot,
-      tone: "bg-red-100 text-red-700",
-    },
-    {
-      title: "AI 数字人",
-      hint: "创意输出环节的辅助播报（右下角悬浮球）",
-      href: "/digital-human",
-      icon: UserRound,
-      tone: "bg-rose-100 text-rose-700",
-    },
-  ];
-}
-
-/** 首个商品链接，从现有业务数据推导稳定的页面展示模型，不在渲染阶段修改源数据。 */
-function firstProductHref(products: Product[], tab: string): string {
-  return products[0] ? `/products/${products[0].id}?tab=${tab}` : "/products";
 }
