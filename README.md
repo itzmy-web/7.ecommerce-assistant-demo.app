@@ -26,7 +26,7 @@ Compose 里 MySQL 3309 / Redis 6380 / Postgres 5434，均为偏移端口。
 
 全局左侧导航带实时徽标（60s 轮询 `GET /api/v1/workspace/sidebar-summary`）。
 
-**公网演示站**：https://ecommerce-assistant-demo.app.workbuddy.host/
+**公网演示站**：http://39.107.107.246:8087/
 （`demo/` 目录：与 web 同源码，BFF 自指 + 内置 mock 数据，单端口可独立部署；登录任意手机号/账号即可进入。）
 
 ---
