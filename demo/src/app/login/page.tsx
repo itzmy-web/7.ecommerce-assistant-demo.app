@@ -216,7 +216,7 @@ function LoginCard() {
 
   return (
     <div className="w-full max-w-[420px] rounded-[24px] border border-orange-100/80 bg-white/95 p-8 text-slate-900 shadow-[0_28px_80px_rgba(234,88,12,0.18)] backdrop-blur-xl">
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">欢迎使用电商运营助手</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900">欢迎使用数营参谋</h1>
       <p className="mt-2 text-sm text-slate-500">
         登录后即可管理店铺、查看数据看板与 AI 数字人
         <span className="mt-1 block text-xs text-slate-400">
@@ -332,10 +332,10 @@ export default function LoginPage() {
       {/* 左栏：品牌区（小屏隐藏，避免挤压登录卡） */}
       <section className="relative z-10 hidden max-w-xl flex-col lg:flex">
         <h2 className="text-5xl font-black leading-tight tracking-tight text-[#331b0e]">
-          电商运营助手
+          数营参谋
         </h2>
         <p className="mt-3 text-lg font-medium text-[#8a5a3b]">
-          商品、活动与内容运营任务平台
+          用数据辅助运营决策，为电商经营提供策略导航
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">

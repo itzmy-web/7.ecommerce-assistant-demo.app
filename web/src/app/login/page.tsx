@@ -38,9 +38,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
       <section className="relative z-10 w-full max-w-md">
         <div className="rounded-[24px] border border-white/[0.08] bg-[#1e2130]/90 p-8 shadow-[0_28px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-9">
-          <h1 className="text-3xl font-bold tracking-tight">欢迎使用电商运营助手</h1>
+          <h1 className="text-3xl font-bold tracking-tight">欢迎使用数营参谋</h1>
           <p className="mt-2.5 text-[15px] text-slate-400">
-            登录后即可管理商品、数据看板与 AI 数字人
+            用数据辅助运营决策，为电商经营提供策略导航
           </p>
 
           {/* 分段选择条：内嵌深灰圆角条 + 渐变激活胶囊（对应参考图的 手机号/微信/支付宝） */}

@@ -51,7 +51,7 @@ export default async function DashboardPrintPage({ searchParams }: PrintPageProp
     <main className="mx-auto max-w-3xl bg-white px-8 py-10 text-slate-900">
       <header className="flex items-start justify-between gap-4 border-b-2 border-slate-900 pb-4">
         <div>
-          <h1 className="text-2xl font-bold">电商运营助手 · 经营看板报告</h1>
+          <h1 className="text-2xl font-bold">数营参谋 · 经营看板报告</h1>
           <p className="mt-1 text-sm text-slate-500">
             统计窗口：近 {days} 天 · 生成时间：{new Date().toLocaleString("zh-CN", { hour12: false })}
           </p>
@@ -144,7 +144,7 @@ export default async function DashboardPrintPage({ searchParams }: PrintPageProp
       </section>
 
       <footer className="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-400">
-        电商运营助手 · 本报告由系统自动聚合生成，数据以在线看板为准。
+        数营参谋 · 本报告由系统自动聚合生成，数据以在线看板为准。
       </footer>
     </main>
   );

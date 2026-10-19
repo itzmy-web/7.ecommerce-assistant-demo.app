@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Bot className="h-6 w-6" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-base font-semibold text-slate-950">电商运营助手</p>
+            <p className="truncate text-base font-semibold text-slate-950">数营参谋</p>
             <p className="truncate text-[11px] font-medium tracking-wide text-slate-400">E-COMMERCE OPS</p>
           </div>
         </div>
@@ -139,7 +139,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-700 text-white">
             <Bot className="h-4.5 w-4.5" aria-hidden="true" />
           </div>
-          <p className="text-sm font-semibold text-slate-950">电商运营助手</p>
+          <p className="text-sm font-semibold text-slate-950">数营参谋</p>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-2 pt-2">
           {navItems.map((item) => {

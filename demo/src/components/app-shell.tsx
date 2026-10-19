@@ -125,7 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white ring-1 ring-white/40">
               <Bot className="h-5 w-5" aria-hidden="true" />
             </div>
-            <p className="text-base font-bold tracking-wide text-white">电商运营助手</p>
+            <p className="text-base font-bold tracking-wide text-white">数营参谋</p>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium tracking-wider text-orange-50 ring-1 ring-white/25 sm:inline">

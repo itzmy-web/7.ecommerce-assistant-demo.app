@@ -73,7 +73,7 @@ export function DigitalHumanPanel({ credentials }: DigitalHumanPanelProps) {
   const [progress, setProgress] = useState(0);
   const [notice, setNotice] = useState<string>("点击「连接数字人」开始，资源下载约需十几秒。");
   const [isError, setIsError] = useState(false);
-  const [speakText, setSpeakText] = useState("欢迎使用电商运营助手，我是你的 AI 数字人运营搭档。");
+  const [speakText, setSpeakText] = useState("欢迎使用数营参谋，我是你的 AI 数字人运营搭档。");
   const sdkRef = useRef<XmovAvatarInstance | null>(null);
   const readyRef = useRef(false);
 
@@ -269,7 +269,7 @@ export function DigitalHumanPanel({ credentials }: DigitalHumanPanelProps) {
             onChange={(event) => setSpeakText(event.target.value)}
             rows={6}
             className="mt-2 w-full resize-none rounded-xl border border-slate-200 p-3 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-50"
-            placeholder="例如：欢迎来到电商运营助手，今天店铺数据表现不错。"
+            placeholder="例如：欢迎来到数营参谋，今天店铺数据表现不错。"
           />
         </div>
         <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 text-xs leading-relaxed text-slate-500">

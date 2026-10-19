@@ -4,7 +4,7 @@ import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 
 export const metadata: Metadata = {
-  title: "电商运营助手",
+  title: "数营参谋",
   description: "AI 单品运营工作台",
 };
 
